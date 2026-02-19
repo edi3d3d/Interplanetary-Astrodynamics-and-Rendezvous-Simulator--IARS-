@@ -1,0 +1,123 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <SDL2/SDL.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include "camera.h"
+
+int main()
+{
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+    SDL_Window *win = SDL_CreateWindow("3D Camera Test",
+                                       SDL_WINDOWPOS_CENTERED,
+                                       SDL_WINDOWPOS_CENTERED,
+                                       800, 600,
+                                       SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    if (!win) {
+        fprintf(stderr, "SDL_CreateWindow Error: %s\n", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    SDL_GLContext glctx = SDL_GL_CreateContext(win);
+    if (!glctx) {
+        fprintf(stderr, "SDL_GL_CreateContext Error: %s\n", SDL_GetError());
+        SDL_DestroyWindow(win);
+        SDL_Quit();
+        return 1;
+    }
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glClearColor(0.1f, 0.12f, 0.15f, 1.0f);
+
+    Camera cam;
+    camera_init(&cam);
+
+    int running = 1;
+    SDL_Event e;
+    while (running) {
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT) running = 0;
+            else if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_RESIZED) {
+                int w = e.window.data1;
+                int h = e.window.data2;
+                glViewport(0, 0, w, h);
+                glMatrixMode(GL_PROJECTION);
+                glLoadIdentity();
+                gluPerspective(60.0, (double)w / (double)h, 0.1, 1000.0);
+                glMatrixMode(GL_MODELVIEW);
+            }
+            camera_handle_event(&cam, &e);
+        }
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // simple projection setup in case window resize event didn't run yet
+        int w, h;
+        SDL_GetWindowSize(win, &w, &h);
+        glViewport(0, 0, w, h);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        gluPerspective(60.0, (double)w / (double)h, 0.1, 1000.0);
+        glMatrixMode(GL_MODELVIEW);
+
+        camera_apply_view(&cam);
+
+        // draw a simple colored cube centered at origin
+        glBegin(GL_QUADS);
+        // Front (z+)
+        glColor3f(1,0,0);
+        glVertex3f(-1, -1,  1);
+        glVertex3f( 1, -1,  1);
+        glVertex3f( 1,  1,  1);
+        glVertex3f(-1,  1,  1);
+        // Back (z-)
+        glColor3f(0,1,0);
+        glVertex3f(-1, -1, -1);
+        glVertex3f(-1,  1, -1);
+        glVertex3f( 1,  1, -1);
+        glVertex3f( 1, -1, -1);
+        // Left (x-)
+        glColor3f(0,0,1);
+        glVertex3f(-1, -1, -1);
+        glVertex3f(-1, -1,  1);
+        glVertex3f(-1,  1,  1);
+        glVertex3f(-1,  1, -1);
+        // Right (x+)
+        glColor3f(1,1,0);
+        glVertex3f(1, -1, -1);
+        glVertex3f(1,  1, -1);
+        glVertex3f(1,  1,  1);
+        glVertex3f(1, -1,  1);
+        // Top (y+)
+        glColor3f(1,0,1);
+        glVertex3f(-1, 1, -1);
+        glVertex3f(-1, 1,  1);
+        glVertex3f( 1, 1,  1);
+        glVertex3f( 1, 1, -1);
+        // Bottom (y-)
+        glColor3f(0,1,1);
+        glVertex3f(-1, -1, -1);
+        glVertex3f( 1, -1, -1);
+        glVertex3f( 1, -1,  1);
+        glVertex3f(-1, -1,  1);
+        glEnd();
+
+        SDL_GL_SwapWindow(win);
+        SDL_Delay(16); // ~60fps
+    }
+
+    SDL_GL_DeleteContext(glctx);
+    SDL_DestroyWindow(win);
+    SDL_Quit();
+    return 0;
+}
