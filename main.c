@@ -42,9 +42,16 @@ int main()
     Camera cam;
     camera_init(&cam);
 
+    Uint32 lastTicks = SDL_GetTicks();
     int running = 1;
     SDL_Event e;
     while (running) {
+        Uint32 now = SDL_GetTicks();
+        float dt = (now - lastTicks) / 1000.0f;
+        if (dt <= 0.0f) dt = 0.001f;
+        if (dt > 0.2f) dt = 0.2f; // clamp large deltas
+        lastTicks = now;
+
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) running = 0;
             else if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_RESIZED) {
@@ -58,6 +65,10 @@ int main()
             }
             camera_handle_event(&cam, &e);
         }
+
+        // update camera from keyboard each frame
+        const Uint8 *keyboardState = SDL_GetKeyboardState(NULL);
+        camera_update(&cam, keyboardState, dt);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -111,6 +122,9 @@ int main()
         glVertex3f( 1, -1,  1);
         glVertex3f(-1, -1,  1);
         glEnd();
+
+        // draw coordinates HUD (top-right)
+        camera_draw_coordinates(&cam, win);
 
         SDL_GL_SwapWindow(win);
         SDL_Delay(16); // ~60fps
