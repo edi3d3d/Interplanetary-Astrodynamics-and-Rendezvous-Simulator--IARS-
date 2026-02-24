@@ -2,6 +2,7 @@
 #define CAMERA_H
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <math.h>
 #include "vec3.h"
 #include "quaternions.h"
@@ -68,6 +69,6 @@ void camera_apply_view(const Camera *cam);
 // Draw camera coordinates in the top-right corner of the given SDL_Window.
 // If SDL_ttf is available define USE_SDL_TTF at compile time and link with SDL2_ttf to render on-screen text.
 // Otherwise the function will print coordinates to stdout as a fallback.
-void camera_draw_coordinates(const Camera *cam, SDL_Window *window);
+void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *font);
 
 #endif // CAMERA_H

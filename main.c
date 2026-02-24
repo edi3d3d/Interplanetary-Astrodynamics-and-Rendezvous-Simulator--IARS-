@@ -1,14 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
+
 #include <GL/gl.h>
 #include <GL/glu.h>
+
 #include "camera.h"
 
 int main()
 {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
+        return 1;
+    }
+    if(TTF_Init()) {
+        fprintf(stderr, "TTF_Init Error: %s\n", TTF_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    TTF_Font *font = TTF_OpenFont("DejaVuSans.ttf", 16);
+    if (!font) {
+        printf("Font load error: %s\n", TTF_GetError());
         return 1;
     }
 
@@ -125,12 +140,14 @@ int main()
         glEnd();
 
         // draw coordinates HUD (top-right)
-        camera_draw_coordinates(&cam, win);
+        camera_draw_coordinates(&cam, win, font);
 
         SDL_GL_SwapWindow(win);
-        SDL_Delay(16); // ~60fps
     }
 
+    TTF_CloseFont(font);
+    TTF_Quit();
+    
     SDL_GL_DeleteContext(glctx);
     SDL_DestroyWindow(win);
     SDL_Quit();
@@ -138,10 +155,6 @@ int main()
 }
 
 
-
-
-
-//todo: rewrite the camera movement code to use a more standard FPS-style control scheme (WASD for forward/back/strafe, mouse for free look) instead of the current orbital controls. This will likely involve changing how the camera position and orientation are updated based on input, and may require refactoring the camera struct to better support free movement.
 //todo: also implement local camera coordonates instead of world-space movement, so that moving forward always moves along the camera's forward axis, etc. This will require computing the camera's local axes (forward, right, up) from its orientation and using those to update position based on input.
 
 //todo: add a simple 3D scene with some objects to navigate around, instead of just the single cube at the origin. This will help test the camera controls and make it more visually interesting. For example, add a grid floor and some cubes or spheres scattered around the scene.

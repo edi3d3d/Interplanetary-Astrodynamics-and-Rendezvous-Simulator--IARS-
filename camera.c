@@ -1,11 +1,14 @@
+#include <stdio.h>
+#include <math.h>
+
+#include <SDL2/SDL.h>
+
+#include <GL/glu.h>
+#include <GL/gl.h>
+
 #include "camera.h"
 #include "vec3.h"
 #include "quaternions.h"
-#include <SDL2/SDL.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <stdio.h>
-#include <math.h>
 
 static const float DEG2RAD = 0.017453292519943295769236907684886f;
 
@@ -20,7 +23,7 @@ void camera_init(Camera *cam)
 
     cam->moveSpeed = 5.0f;
 
-    // Treat these as "degrees per pixel" (typical). We'll convert to radians.
+    //degree/pixel
     cam->sensitivityX = 0.15f;
     cam->sensitivityY = 0.15f;
 
@@ -54,17 +57,16 @@ void camera_handle_event(Camera *cam, const SDL_Event *e)
         cam->lastMouseX = e->motion.x;
         cam->lastMouseY = e->motion.y;
 
-        // Convert mouse deltas to radians.
-        // If sensitivity is degrees/pixel, multiply by DEG2RAD.
+        // mouse delta to radian
+        // sensitivity is degrees/pixel, convert to radians for rotation calculations
         float yawDeltaRad   = (-dx) * cam->sensitivityX * cam->mouseRotateSpeed * DEG2RAD;
         float pitchDeltaRad = (dy) * cam->sensitivityY * cam->mouseRotateSpeed * DEG2RAD;
 
-        // Local basis at identity:
         // forward = +X, side = +Y, up = +Z
         Vec3 localUp   = v3_set(0.0f, 0.0f, 1.0f);
         Vec3 localSide = v3_set(0.0f, 1.0f, 0.0f);
 
-        // --- YAW about camera's CURRENT up axis (not world up) ---
+        // +z up, +y side, +x forward
         Vec3 yawAxisWorld = q_rotate_vec3(cam->rot, localUp);
         yawAxisWorld = v3_normalize(yawAxisWorld);
 
@@ -72,7 +74,6 @@ void camera_handle_event(Camera *cam, const SDL_Event *e)
         cam->rot = q_mul(qYaw, cam->rot);
         cam->rot = q_normalize(cam->rot);
 
-        // --- PITCH about camera's CURRENT side axis ---
         Vec3 pitchAxisWorld = q_rotate_vec3(cam->rot, localSide);
         pitchAxisWorld = v3_normalize(pitchAxisWorld);
 
@@ -88,10 +89,7 @@ void camera_update(Camera *cam, const Uint8 *keyboardState, float dt)
 
     Vec3 movementLocal = v3_set(0.0f, 0.0f, 0.0f);
 
-    // Local movement intent in camera coordinates:
-    // X: along localForward (+X)
-    // Y: along localSide (+Y)
-    // Z: along localUp (+Z)
+    // movement
     if (keyboardState[SDL_SCANCODE_W]) movementLocal.x += 1.0f;
     if (keyboardState[SDL_SCANCODE_S]) movementLocal.x -= 1.0f;
 
@@ -101,15 +99,33 @@ void camera_update(Camera *cam, const Uint8 *keyboardState, float dt)
     if (keyboardState[SDL_SCANCODE_LSHIFT] || keyboardState[SDL_SCANCODE_RSHIFT]) movementLocal.z += 1.0f;
     if (keyboardState[SDL_SCANCODE_LCTRL]  || keyboardState[SDL_SCANCODE_RCTRL])  movementLocal.z -= 1.0f;
 
-    if (v3_is_zero(movementLocal)) return;
+    // roll (Q/E)
+    int rollDir = 0;
+    if (keyboardState[SDL_SCANCODE_E]) rollDir += 1;
+    if (keyboardState[SDL_SCANCODE_Q]) rollDir -= 1;
 
-    // Normalize so diagonal movement isn't faster
-    movementLocal = v3_normalize(movementLocal);
+    // roll
+    if (rollDir != 0) {
+        // roll speed in deg/sec
+        const float rollSpeedDeg = 90.0f;
+        float rollDeltaRad = (rollDir * rollSpeedDeg) * dt * DEG2RAD;
 
-    // Transform local movement into world movement using orientation
-    Vec3 movementWorld = q_rotate_vec3(cam->rot, movementLocal);
+        // roll axis = camera's current forward axis
+        Vec3 localForward = v3_set(1.0f, 0.0f, 0.0f);
+        Vec3 rollAxisWorld = q_rotate_vec3(cam->rot, localForward);
+        rollAxisWorld = v3_normalize(rollAxisWorld);
 
-    cam->position = v3_add(cam->position, v3_scale(movementWorld, cam->moveSpeed * dt));
+        Quaternion qRoll = q_from_axis_angle(rollAxisWorld, rollDeltaRad);
+        cam->rot = q_mul(qRoll, cam->rot);
+        cam->rot = q_normalize(cam->rot);
+    }
+
+    // movement
+    if (!v3_is_zero(movementLocal)) {
+        movementLocal = v3_normalize(movementLocal);
+        Vec3 movementWorld = q_rotate_vec3(cam->rot, movementLocal);
+        cam->position = v3_add(cam->position, v3_scale(movementWorld, cam->moveSpeed * dt));
+    }
 }
 
 void camera_apply_view(const Camera *cam)
@@ -128,24 +144,149 @@ void camera_apply_view(const Camera *cam)
     forward = v3_normalize(forward);
     up      = v3_normalize(up);
 
-    // Any positive distance works; 1 is enough
+    // center point = pos + forward (local forward, can be made larger but it doesnt matter that much >= 0)
     Vec3 center = v3_add(pos, forward);
 
     gluLookAt(pos.x, pos.y, pos.z,
               center.x, center.y, center.z,
               up.x, up.y, up.z);
 }
-
-void camera_draw_coordinates(const Camera *cam, SDL_Window *window)
+void draw_surface(SDL_Surface *surf, int drawX, int drawY)
 {
-    if (!cam || !window) return;
+    GLuint tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
 
-    // Quaternion isn't (pitch,yaw,roll). Show position + quaternion components.
-    char buf[160];
-    snprintf(buf, sizeof(buf),
-             "Pos: %.2f, %.2f, %.2f  Q(w,x,y,z): %.3f, %.3f, %.3f, %.3f",
-             cam->position.x, cam->position.y, cam->position.z,
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, surf->pitch / 4);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                 surf->w, surf->h, 0,
+                 GL_BGRA, GL_UNSIGNED_BYTE,
+                 surf->pixels);
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    glColor4f(1.f, 1.f, 1.f, 1.f);
+
+    glBegin(GL_QUADS);
+        glTexCoord2f(0,0); glVertex2f(drawX, drawY);
+        glTexCoord2f(1,0); glVertex2f(drawX+surf->w, drawY);
+        glTexCoord2f(1,1); glVertex2f(drawX+surf->w, drawY+surf->h);
+        glTexCoord2f(0,1); glVertex2f(drawX, drawY+surf->h);
+    glEnd();
+
+    glDeleteTextures(1, &tex);
+};
+void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *font)
+{
+    if (!cam || !window || !font) return;
+
+    char line1[128];
+    char line2[128];
+
+    snprintf(line1, sizeof(line1),
+             "Pos: %.2f, %.2f, %.2f",
+             cam->position.x, cam->position.y, cam->position.z);
+
+    snprintf(line2, sizeof(line2),
+             "Q(w,x,y,z): %.3f, %.3f, %.3f, %.3f",
              cam->rot.w, cam->rot.v.x, cam->rot.v.y, cam->rot.v.z);
 
-    SDL_SetWindowTitle(window, buf);
+    SDL_Color black = {0, 0, 0, 255};
+
+    SDL_Surface *s1 = TTF_RenderUTF8_Blended(font, line1, black);
+    SDL_Surface *s2 = TTF_RenderUTF8_Blended(font, line2, black);
+    if (!s1 || !s2) {
+        if (s1) SDL_FreeSurface(s1);
+        if (s2) SDL_FreeSurface(s2);
+        return;
+    }
+
+    SDL_Surface *c1 = SDL_ConvertSurfaceFormat(s1, SDL_PIXELFORMAT_ARGB8888, 0);
+    SDL_Surface *c2 = SDL_ConvertSurfaceFormat(s2, SDL_PIXELFORMAT_ARGB8888, 0);
+    SDL_FreeSurface(s1);
+    SDL_FreeSurface(s2);
+    if (!c1 || !c2) {
+        if (c1) SDL_FreeSurface(c1);
+        if (c2) SDL_FreeSurface(c2);
+        return;
+    }
+
+    int textW = (c1->w > c2->w) ? c1->w : c2->w;
+    int textH = c1->h + c2->h;
+
+    int winW, winH;
+    SDL_GetWindowSize(window, &winW, &winH);
+
+    int pad = 6;
+    int x = winW - textW - 10;
+    int y = 10;
+
+    int bgX = x - pad;
+    int bgY = y - pad;
+    int bgW = textW + pad * 2;
+    int bgH = textH + pad * 2;
+
+    // Save GL state
+    GLboolean wasTex2D = glIsEnabled(GL_TEXTURE_2D);
+    GLboolean wasCull  = glIsEnabled(GL_CULL_FACE);
+    GLboolean wasDepth = glIsEnabled(GL_DEPTH_TEST);
+    GLboolean wasBlend = glIsEnabled(GL_BLEND);
+    GLint oldMatrixMode;
+    glGetIntegerv(GL_MATRIX_MODE, &oldMatrixMode);
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glOrtho(0, winW, winH, 0, -1, 1);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    // White background
+    glDisable(GL_TEXTURE_2D);
+    glColor4f(1.f, 1.f, 1.f, 1.f);
+    glBegin(GL_QUADS);
+        glVertex2f(bgX, bgY);
+        glVertex2f(bgX+bgW, bgY);
+        glVertex2f(bgX+bgW, bgY+bgH);
+        glVertex2f(bgX, bgY+bgH);
+    glEnd();
+
+    // Black border
+    glColor4f(0.f, 0.f, 0.f, 1.f);
+    glBegin(GL_LINE_LOOP);
+        glVertex2f(bgX, bgY);
+        glVertex2f(bgX+bgW, bgY);
+        glVertex2f(bgX+bgW, bgY+bgH);
+        glVertex2f(bgX, bgY+bgH);
+    glEnd();
+
+    draw_surface(c1, x, y);
+    draw_surface(c2, x, y + c1->h);
+
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(oldMatrixMode);
+
+    if (wasDepth) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+    if (wasCull)  glEnable(GL_CULL_FACE);  else glDisable(GL_CULL_FACE);
+    if (wasBlend) glEnable(GL_BLEND);      else glDisable(GL_BLEND);
+    if (wasTex2D) glEnable(GL_TEXTURE_2D); else glDisable(GL_TEXTURE_2D);
+
+    SDL_FreeSurface(c1);
+    SDL_FreeSurface(c2);
 }
