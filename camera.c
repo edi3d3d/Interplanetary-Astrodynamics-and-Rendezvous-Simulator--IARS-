@@ -151,6 +151,7 @@ void camera_apply_view(const Camera *cam)
               center.x, center.y, center.z,
               up.x, up.y, up.z);
 }
+
 void draw_surface(SDL_Surface *surf, int drawX, int drawY)
 {
     GLuint tex;
@@ -183,6 +184,7 @@ void draw_surface(SDL_Surface *surf, int drawX, int drawY)
 
     glDeleteTextures(1, &tex);
 };
+
 void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *font)
 {
     if (!cam || !window || !font) return;
