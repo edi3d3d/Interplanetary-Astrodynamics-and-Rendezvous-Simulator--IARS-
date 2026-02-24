@@ -4,16 +4,21 @@
 #include <SDL2/SDL.h>
 #include <math.h>
 #include "vec3.h"
+#include "quaternions.h"
 
 typedef struct Camera {
-    // world-space camera position
+    // world-space camera position (computed from base + local)
+    // (x, y, z) x is forward, y is left, z is up, weird
+    //
+    // x forward/back, y for left/right, z for up/down
     Vec3 position;
 
-    // point the camera can orbit around (used for orbital zoom/orbiting)
+    // point the camera can orbit around (used as base in orbit mode)
     Vec3 target;
 
-    // Euler angles (radians) packed in a Vec3: (pitch=X, yaw=Y, roll=Z)
-    Vec3 rot;
+    // Euler angles in degrees packed in a Quaternion: (w, x, y, z)
+    // These are the camera-local rotation values the UI and controls modify.
+    Quaternion rot;
 
     // distance from target when in orbit mode (zoom)
     float distance;
@@ -32,9 +37,11 @@ typedef struct Camera {
 
     int freeMode;        // when set, camera uses position + orientation (6-DOF) instead of orbiting target
 
-    // local-space offset (camera-local coordinates)
-    Vec3 localPosition;
-    Vec3 basePosition;
+    // local-space offset (camera-local coordinates) and base (world-space anchor)
+    // localPosition is in camera-local axes: X=right, Y=up, Z=forward (forward positive)
+    // We store localPosition so input modifies camera-local coords; camera computes world position from basePosition + rotated(localPosition).
+    Vec3 localPosition; // units in same units as world
+    Vec3 basePosition;  // world-space anchor (typically equal to target when not in freeMode)
 } Camera;
 
 // Initialize camera with sensible defaults
@@ -49,8 +56,8 @@ void camera_handle_event(Camera *cam, const SDL_Event *e);
 // Keyboard controls (expected SDL keyboard state):
 // - W / S : move forward / backward along camera forward vector
 // - A / D : strafe left / right along camera right vector
-// - Left Shift : move up (world +Y)
-// - Left Ctrl  : move down (world -Y)
+// - Left Shift : move up (camera-local up)
+// - Left Ctrl  : move down (camera-local down)
 // - Q / E : roll left / right (rotate around forward axis)
 // Use SDL_GetKeyboardState(NULL) to get the keyboardState argument.
 void camera_update(Camera *cam, const Uint8 *keyboardState, float dt);

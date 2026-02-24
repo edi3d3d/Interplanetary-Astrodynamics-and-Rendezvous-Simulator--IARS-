@@ -1,85 +1,70 @@
 #include "vec3.h"
 #include <string.h>
+#include <math.h>
 
-void v3_set(Vec3 *out, float x, float y, float z) {
-    if (!out) return;
-    out->x = x; out->y = y; out->z = z;
+Vec3 v3_set(float x, float y, float z) {
+    return (Vec3){x, y, z};
 }
 
-void v3_copy(Vec3 *out, const Vec3 *a) {
-    if (!out || !a) return;
-    memcpy(out, a, sizeof(Vec3));
+Vec3 v3_copy(const Vec3 a) {
+    return v3_set(a.x, a.y, a.z);
 }
 
-void v3_add(Vec3 *out, const Vec3 *a, const Vec3 *b) {
-    if (!out || !a || !b) return;
-    out->x = a->x + b->x;
-    out->y = a->y + b->y;
-    out->z = a->z + b->z;
+Vec3 v3_add(const Vec3 a, const Vec3 b) {
+    return v3_set(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
-void v3_sub(Vec3 *out, const Vec3 *a, const Vec3 *b) {
-    if (!out || !a || !b) return;
-    out->x = a->x - b->x;
-    out->y = a->y - b->y;
-    out->z = a->z - b->z;
+Vec3 v3_sub(const Vec3 a, const Vec3 b) {
+    return v3_set(a.x - b.x, a.y - b.y, a.z - b.z);
 }
 
-void v3_scale(Vec3 *out, const Vec3 *a, float s) {
-    if (!out || !a) return;
-    out->x = a->x * s;
-    out->y = a->y * s;
-    out->z = a->z * s;
+Vec3 v3_scale(const Vec3 a, float s) {
+    return v3_set(a.x * s, a.y * s, a.z * s);
 }
 
-void v3_mul(Vec3 *out, const Vec3 *a, const Vec3 *b) {
-    if (!out || !a || !b) return;
-    out->x = a->x * b->x;
-    out->y = a->y * b->y;
-    out->z = a->z * b->z;
+Vec3 v3_mul(const Vec3 a, const Vec3 b) {
+    return v3_set(a.x * b.x, a.y * b.y, a.z * b.z);
 }
 
-float v3_dot(const Vec3 *a, const Vec3 *b) {
-    if (!a || !b) return 0.0f;
-    return a->x*b->x + a->y*b->y + a->z*b->z;
+float v3_dot(const Vec3 a, const Vec3 b) {
+    return a.x*b.x + a.y*b.y + a.z*b.z;
 }
 
-void v3_cross(Vec3 *out, const Vec3 *a, const Vec3 *b) {
-    if (!out || !a || !b) return;
-    out->x = a->y*b->z - a->z*b->y;
-    out->y = a->z*b->x - a->x*b->z;
-    out->z = a->x*b->y - a->y*b->x;
+Vec3 v3_cross(const Vec3 a, const Vec3 b) {
+    return v3_set(a.y*b.z - a.z*b.y,
+                  a.z*b.x - a.x*b.z,
+                  a.x*b.y - a.y*b.x);
 }
 
-float v3_len2(const Vec3 *a) {
-    if (!a) return 0.0f;
-    return a->x*a->x + a->y*a->y + a->z*a->z;
+float v3_len2(const Vec3 a) {
+    return a.x*a.x + a.y*a.y + a.z*a.z;
 }
 
-float v3_len(const Vec3 *a) {
+float v3_len(const Vec3 a) {
     return sqrtf(v3_len2(a));
 }
 
-void v3_normalize(Vec3 *out, const Vec3 *a) {
-    if (!out || !a) return;
-    float l = v3_len(a);
-    if (l > 1e-6f) {
-        out->x = a->x / l;
-        out->y = a->y / l;
-        out->z = a->z / l;
-    } else {
-        out->x = out->y = out->z = 0.0f;
-    }
+int v3_is_zero(const Vec3 a) {
+    return v3_len2(a) < 1e-6f;
 }
 
-void v3_add_scaled(Vec3 *out, const Vec3 *a, const Vec3 *b, float s) {
-    if (!out || !a || !b) return;
-    out->x = a->x + b->x * s;
-    out->y = a->y + b->y * s;
-    out->z = a->z + b->z * s;
+Vec3 v3_normalize(const Vec3 a) {
+    float l = v3_len(a);
+    if (l > 1e-6f) return v3_scale(a, 1.0f / l);
+    return v3_set(0,0,0);
+}
+
+Vec3 v3_normalize_to(const Vec3 a, const float s) {
+    float l = v3_len(a);
+    if (l > 1e-6f) return v3_scale(a, s / l);
+    return v3_set(0,0,0);
+}
+
+Vec3 v3_add_scaled(const Vec3 a, const Vec3 b, float s) {
+    return v3_add(a, v3_scale(b, s));
 }
 
 void v3_scale_inplace(Vec3 *a, float s) {
     if (!a) return;
-    a->x *= s; a->y *= s; a->z *= s;
+    *a = v3_scale(*a, s);
 }
