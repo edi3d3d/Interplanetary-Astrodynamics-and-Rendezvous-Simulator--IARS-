@@ -2,6 +2,7 @@
 #define VEC3_H
 
 #include <math.h>
+#include <stdio.h>
 
 typedef struct Vec3{
     float x;
@@ -39,5 +40,6 @@ Vec3 v3_normalize_to(const Vec3 a, const float s);
 Vec3 v3_add_scaled(const Vec3 a, const Vec3 b, float s);
 // in-place scale a *= s
 void v3_scale_inplace(Vec3 *a, float s);
-
+// print vector to console (for debugging)
+void v3_print(const Vec3 a);
 #endif // VEC3_H

@@ -8,6 +8,7 @@
 #include <GL/glu.h>
 
 #include "camera.h"
+#include "draw.h"
 
 int main()
 {
@@ -99,45 +100,13 @@ int main()
 
         camera_apply_view(&cam);
 
-        // draw a simple colored cube centered at origin
-        glBegin(GL_QUADS);
-        // Front (z+)
-        glColor3f(1,0,0);
-        glVertex3f(-1, -1,  1);
-        glVertex3f( 1, -1,  1);
-        glVertex3f( 1,  1,  1);
-        glVertex3f(-1,  1,  1);
-        // Back (z-)
-        glColor3f(0,1,0);
-        glVertex3f(-1, -1, -1);
-        glVertex3f(-1,  1, -1);
-        glVertex3f( 1,  1, -1);
-        glVertex3f( 1, -1, -1);
-        // Left (x-)
-        glColor3f(0,0,1);
-        glVertex3f(-1, -1, -1);
-        glVertex3f(-1, -1,  1);
-        glVertex3f(-1,  1,  1);
-        glVertex3f(-1,  1, -1);
-        // Right (x+)
-        glColor3f(1,1,0);
-        glVertex3f(1, -1, -1);
-        glVertex3f(1,  1, -1);
-        glVertex3f(1,  1,  1);
-        glVertex3f(1, -1,  1);
-        // Top (y+)
-        glColor3f(1,0,1);
-        glVertex3f(-1, 1, -1);
-        glVertex3f(-1, 1,  1);
-        glVertex3f( 1, 1,  1);
-        glVertex3f( 1, 1, -1);
-        // Bottom (y-)
-        glColor3f(0,1,1);
-        glVertex3f(-1, -1, -1);
-        glVertex3f( 1, -1, -1);
-        glVertex3f( 1, -1,  1);
-        glVertex3f(-1, -1,  1);
-        glEnd();
+
+        glShadeModel(GL_SMOOTH);
+        glEnable(GL_DEPTH_TEST);
+
+        
+        draw_cube(v3_set(0, 0, 0), 1);
+        //draw_sphere(v3_set(3, 0, 0), 0.5f, 16, 16, v3_set(1, 1, 1));
 
         // draw coordinates HUD (top-right)
         camera_draw_coordinates(&cam, win, font);

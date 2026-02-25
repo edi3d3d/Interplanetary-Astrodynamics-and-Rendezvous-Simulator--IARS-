@@ -68,3 +68,7 @@ void v3_scale_inplace(Vec3 *a, float s) {
     if (!a) return;
     *a = v3_scale(*a, s);
 }
+
+void v3_print(const Vec3 a) {
+    printf("(%.3f, %.3f, %.3f)\n", a.x, a.y, a.z);
+}
