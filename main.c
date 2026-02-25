@@ -104,8 +104,27 @@ int main()
         glShadeModel(GL_SMOOTH);
         glEnable(GL_DEPTH_TEST);
 
-        
-        draw_cube(v3_set(0, 0, 0), 1);
+        Vec3 colors[6] = {
+            v3_set(1,1,1), // bottom
+            v3_set(1,1,0), // top
+            v3_set(0,1,0), // front
+            v3_set(1,0,0), // back
+            v3_set(0,1,1), // left
+            v3_set(0,0,1)  // right
+        };
+
+        Vec3 colors1[6] = {
+            v3_set(0,1,1), // left
+            v3_set(1,1,1), // front
+            v3_set(1,0,0), // bottom
+            v3_set(1,1,1), // top
+            v3_set(1,1,1), // back
+            v3_set(0,0,1)  // right
+        };
+
+        draw_cube(v3_set(0, 0, sqrt(2)), 1, colors);
+        draw_cuboid(v3_set(0, 0, 0), 1e5, 1e5, 0.1f, colors1);
+
         //draw_sphere(v3_set(3, 0, 0), 0.5f, 16, 16, v3_set(1, 1, 1));
 
         // draw coordinates HUD (top-right)

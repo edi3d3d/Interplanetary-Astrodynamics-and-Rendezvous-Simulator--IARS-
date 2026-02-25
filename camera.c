@@ -13,6 +13,28 @@
 static const float DEG2RAD = 0.017453292519943295769236907684886f;
 
 
+static void camera_apply_yaw_pitch(Camera *cam, float yawDeltaRad, float pitchDeltaRad)
+{
+    // local axes: forward +X, side +Y, up +Z
+    Vec3 localUp   = v3_set(0.0f, 0.0f, 1.0f);
+    Vec3 localSide = v3_set(0.0f, 1.0f, 0.0f);
+
+    // yaw around camera-up (in world)
+    Vec3 yawAxisWorld = q_rotate_vec3(cam->rot, localUp);
+    yawAxisWorld = v3_normalize(yawAxisWorld);
+
+    Quaternion qYaw = q_from_axis_angle(yawAxisWorld, yawDeltaRad);
+    cam->rot = q_mul(qYaw, cam->rot);
+    cam->rot = q_normalize(cam->rot);
+
+    // pitch around camera-side (after yaw)
+    Vec3 pitchAxisWorld = q_rotate_vec3(cam->rot, localSide);
+    pitchAxisWorld = v3_normalize(pitchAxisWorld);
+
+    Quaternion qPitch = q_from_axis_angle(pitchAxisWorld, pitchDeltaRad);
+    cam->rot = q_mul(qPitch, cam->rot);
+    cam->rot = q_normalize(cam->rot);
+}
 
 void camera_init(Camera *cam)
 {
@@ -32,6 +54,9 @@ void camera_init(Camera *cam)
 
     cam->dragging = 0;
     cam->lastMouseX = cam->lastMouseY = 0;
+
+    cam->lookLeft = cam->lookRight = cam->lookUp = cam->lookDown = 0;
+    cam->keyLookSpeedDeg = 90.0f; // adjust
 }
 
 void camera_handle_event(Camera *cam, const SDL_Event *e)
@@ -57,35 +82,42 @@ void camera_handle_event(Camera *cam, const SDL_Event *e)
         cam->lastMouseX = e->motion.x;
         cam->lastMouseY = e->motion.y;
 
-        // mouse delta to radian
-        // sensitivity is degrees/pixel, convert to radians for rotation calculations
         float yawDeltaRad   = (-dx) * cam->sensitivityX * cam->mouseRotateSpeed * DEG2RAD;
-        float pitchDeltaRad = (dy) * cam->sensitivityY * cam->mouseRotateSpeed * DEG2RAD;
+        float pitchDeltaRad = ( dy) * cam->sensitivityY * cam->mouseRotateSpeed * DEG2RAD;
 
-        // forward = +X, side = +Y, up = +Z
-        Vec3 localUp   = v3_set(0.0f, 0.0f, 1.0f);
-        Vec3 localSide = v3_set(0.0f, 1.0f, 0.0f);
+        camera_apply_yaw_pitch(cam, yawDeltaRad, pitchDeltaRad);
+        return;
+    }
 
-        // +z up, +y side, +x forward
-        Vec3 yawAxisWorld = q_rotate_vec3(cam->rot, localUp);
-        yawAxisWorld = v3_normalize(yawAxisWorld);
+    if (e->type == SDL_KEYDOWN || e->type == SDL_KEYUP) {
+        int down = (e->type == SDL_KEYDOWN);
 
-        Quaternion qYaw = q_from_axis_angle(yawAxisWorld, yawDeltaRad);
-        cam->rot = q_mul(qYaw, cam->rot);
-        cam->rot = q_normalize(cam->rot);
+        // optional: ignore key repeat so holding doesn't spam events (we use held-state anyway)
+        // if (e->type == SDL_KEYDOWN && e->key.repeat) return;
 
-        Vec3 pitchAxisWorld = q_rotate_vec3(cam->rot, localSide);
-        pitchAxisWorld = v3_normalize(pitchAxisWorld);
-
-        Quaternion qPitch = q_from_axis_angle(pitchAxisWorld, pitchDeltaRad);
-        cam->rot = q_mul(qPitch, cam->rot);
-        cam->rot = q_normalize(cam->rot);
+        switch (e->key.keysym.sym) {
+            case SDLK_LEFT:  cam->lookLeft  = down; break;
+            case SDLK_RIGHT: cam->lookRight = down; break;
+            case SDLK_UP:    cam->lookUp    = down; break;
+            case SDLK_DOWN:  cam->lookDown  = down; break;
+            default: break;
+        }
     }
 }
 
 void camera_update(Camera *cam, const Uint8 *keyboardState, float dt)
 {
     if (!cam || !keyboardState) return;
+
+    int dx = (cam->lookRight ? 1 : 0) - (cam->lookLeft ? 1 : 0);
+    int dy = (cam->lookDown  ? 1 : 0) - (cam->lookUp   ? 1 : 0);
+
+    if (dx != 0 || dy != 0) {
+        float yawDeltaRad   = (-(float)dx) * cam->keyLookSpeedDeg * DEG2RAD * dt;
+        float pitchDeltaRad = ( (float)dy) * cam->keyLookSpeedDeg * DEG2RAD * dt;
+
+        camera_apply_yaw_pitch(cam, yawDeltaRad, pitchDeltaRad);
+    }
 
     Vec3 movementLocal = v3_set(0.0f, 0.0f, 0.0f);
 

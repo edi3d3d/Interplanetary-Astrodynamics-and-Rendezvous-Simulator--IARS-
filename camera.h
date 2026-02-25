@@ -21,9 +21,6 @@ typedef struct Camera {
     // These are the camera-local rotation values the UI and controls modify.
     Quaternion rot;
 
-    // distance from target when in orbit mode (zoom)
-    float distance;
-
     // mouse drag state
     int dragging;       // mouse left button dragging flag
     int lastMouseX;
@@ -36,7 +33,8 @@ typedef struct Camera {
     float mouseRotateSpeed; // multiplier for mouse rotation when dragging
     float zoomSpeed;     // wheel zoom speed
 
-    int freeMode;        // when set, camera uses position + orientation (6-DOF) instead of orbiting target
+    int lookLeft, lookRight, lookUp, lookDown;
+    float keyLookSpeedDeg; // degrees/sec
 
     // local-space offset (camera-local coordinates) and base (world-space anchor)
     // localPosition is in camera-local axes: X=right, Y=up, Z=forward (forward positive)
@@ -49,8 +47,6 @@ typedef struct Camera {
 void camera_init(Camera *cam);
 
 // Handle SDL events related to the camera (mouse motion, wheel, buttons)
-// - mouse wheel should zoom in/out (adjusts cam->distance or moves along forward)
-// - mouse button press toggles dragging (holding left button + mouse move rotates yaw/pitch)
 void camera_handle_event(Camera *cam, const SDL_Event *e);
 
 // Update camera from keyboard state. Call once per frame with dt (seconds).
