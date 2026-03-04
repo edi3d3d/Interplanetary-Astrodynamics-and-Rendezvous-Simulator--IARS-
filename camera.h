@@ -36,11 +36,10 @@ typedef struct Camera {
     int lookLeft, lookRight, lookUp, lookDown;
     float keyLookSpeedDeg; // degrees/sec
 
-    // local-space offset (camera-local coordinates) and base (world-space anchor)
-    // localPosition is in camera-local axes: X=right, Y=up, Z=forward (forward positive)
-    // We store localPosition so input modifies camera-local coords; camera computes world position from basePosition + rotated(localPosition).
-    Vec3 localPosition; // units in same units as world
-    Vec3 basePosition;  // world-space anchor (typically equal to target when not in freeMode)
+    // --- new: speed input mode ---
+    int speedInputActive;
+    char speedInputBuf[32];
+    int speedInputLen;
 } Camera;
 
 // Initialize camera with sensible defaults

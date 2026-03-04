@@ -12,6 +12,44 @@
 
 static const float DEG2RAD = 0.017453292519943295769236907684886f;
 
+static void camera_begin_speed_input(Camera *cam)
+{
+    cam->speedInputActive = 1;
+    cam->speedInputLen = 0;
+    cam->speedInputBuf[0] = '\0';
+    SDL_StartTextInput();
+}
+
+static void camera_cancel_speed_input(Camera *cam)
+{
+    cam->speedInputActive = 0;
+    cam->speedInputLen = 0;
+    cam->speedInputBuf[0] = '\0';
+    SDL_StopTextInput();
+}
+
+static void camera_commit_speed_input(Camera *cam)
+{
+    if (cam->speedInputLen == 0) {
+        camera_cancel_speed_input(cam);
+        return;
+    }
+
+    char *endp = NULL;
+    float v = strtof(cam->speedInputBuf, &endp);
+
+    // Accept only if parsed something and it's finite and > 0
+    if (endp != cam->speedInputBuf && isfinite(v) && v > 0.0f) {
+        cam->moveSpeed = v;
+    }
+
+    camera_cancel_speed_input(cam);
+}
+
+static int is_allowed_speed_char(char c)
+{
+    return (c >= '0' && c <= '9') || c == '.' || c == '-';
+}
 
 static void camera_apply_yaw_pitch(Camera *cam, float yawDeltaRad, float pitchDeltaRad)
 {
@@ -41,11 +79,10 @@ void camera_init(Camera *cam)
     if (!cam) return;
 
     cam->position = v3_set(-5.0f, 0.0f, 0.0f);
-    cam->rot = q_set(1.0f, 0.0f, 0.0f, 0.0f); // identity
+    cam->rot = q_set(1.0f, 0.0f, 0.0f, 0.0f);
 
     cam->moveSpeed = 5.0f;
 
-    //degree/pixel
     cam->sensitivityX = 0.15f;
     cam->sensitivityY = 0.15f;
 
@@ -56,12 +93,61 @@ void camera_init(Camera *cam)
     cam->lastMouseX = cam->lastMouseY = 0;
 
     cam->lookLeft = cam->lookRight = cam->lookUp = cam->lookDown = 0;
-    cam->keyLookSpeedDeg = 90.0f; // adjust
+    cam->keyLookSpeedDeg = 90.0f;
+
+    cam->speedInputActive = 0;
+    cam->speedInputLen = 0;
+    cam->speedInputBuf[0] = '\0';
 }
 
 void camera_handle_event(Camera *cam, const SDL_Event *e)
 {
     if (!cam || !e) return;
+
+    if (cam->speedInputActive) {
+        if (e->type == SDL_TEXTINPUT) {
+            // Append allowed characters
+            for (const char *p = e->text.text; *p; ++p) {
+                if (!is_allowed_speed_char(*p)) continue;
+                if (cam->speedInputLen < (int)sizeof(cam->speedInputBuf) - 1) {
+                    cam->speedInputBuf[cam->speedInputLen++] = *p;
+                    cam->speedInputBuf[cam->speedInputLen] = '\0';
+                }
+            }
+            return;
+        }
+
+        if (e->type == SDL_KEYDOWN) {
+            SDL_Keycode k = e->key.keysym.sym;
+
+            if (k == SDLK_BACKSPACE) {
+                if (cam->speedInputLen > 0) {
+                    cam->speedInputBuf[--cam->speedInputLen] = '\0';
+                }
+                return;
+            }
+            if (k == SDLK_RETURN || k == SDLK_KP_ENTER) {
+                camera_commit_speed_input(cam);
+                return;
+            }
+            if (k == SDLK_ESCAPE) {
+                camera_cancel_speed_input(cam);
+                return;
+            }
+        }
+
+        // While typing, ignore other camera controls
+        return;
+    }
+
+    // --- normal camera events ---
+    if (e->type == SDL_KEYDOWN) {
+        // Press I to start typing speed
+        if (e->key.keysym.sym == SDLK_i) {
+            camera_begin_speed_input(cam);
+            return;
+        }
+    }
 
     if (e->type == SDL_MOUSEBUTTONDOWN && e->button.button == SDL_BUTTON_LEFT) {
         cam->dragging = 1;
@@ -108,6 +194,11 @@ void camera_handle_event(Camera *cam, const SDL_Event *e)
 void camera_update(Camera *cam, const Uint8 *keyboardState, float dt)
 {
     if (!cam || !keyboardState) return;
+
+    if (cam->speedInputActive) {
+        // No movement/rotation while typing
+        return;
+    }
 
     int dx = (cam->lookRight ? 1 : 0) - (cam->lookLeft ? 1 : 0);
     int dy = (cam->lookDown  ? 1 : 0) - (cam->lookUp   ? 1 : 0);
@@ -223,6 +314,7 @@ void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *fo
 
     char line1[128];
     char line2[128];
+    char line3[128];
 
     snprintf(line1, sizeof(line1),
              "Pos: %.2f, %.2f, %.2f",
@@ -232,28 +324,49 @@ void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *fo
              "Q(w,x,y,z): %.3f, %.3f, %.3f, %.3f",
              cam->rot.w, cam->rot.v.x, cam->rot.v.y, cam->rot.v.z);
 
+    int show3 = 0;
+    if (cam->speedInputActive) {
+        snprintf(line3, sizeof(line3), "Set moveSpeed: %s", cam->speedInputBuf);
+        show3 = 1;
+    } else {
+        // optional: show current speed when not typing
+        snprintf(line3, sizeof(line3), "moveSpeed: %.3f", cam->moveSpeed);
+        show3 = 1;
+    }
+
     SDL_Color black = {0, 0, 0, 255};
 
     SDL_Surface *s1 = TTF_RenderUTF8_Blended(font, line1, black);
     SDL_Surface *s2 = TTF_RenderUTF8_Blended(font, line2, black);
-    if (!s1 || !s2) {
+    SDL_Surface *s3 = show3 ? TTF_RenderUTF8_Blended(font, line3, black) : NULL;
+
+    if (!s1 || !s2 || (show3 && !s3)) {
         if (s1) SDL_FreeSurface(s1);
         if (s2) SDL_FreeSurface(s2);
+        if (s3) SDL_FreeSurface(s3);
         return;
     }
 
     SDL_Surface *c1 = SDL_ConvertSurfaceFormat(s1, SDL_PIXELFORMAT_ARGB8888, 0);
     SDL_Surface *c2 = SDL_ConvertSurfaceFormat(s2, SDL_PIXELFORMAT_ARGB8888, 0);
+    SDL_Surface *c3 = show3 ? SDL_ConvertSurfaceFormat(s3, SDL_PIXELFORMAT_ARGB8888, 0) : NULL;
+
     SDL_FreeSurface(s1);
     SDL_FreeSurface(s2);
-    if (!c1 || !c2) {
+    if (s3) SDL_FreeSurface(s3);
+
+    if (!c1 || !c2 || (show3 && !c3)) {
         if (c1) SDL_FreeSurface(c1);
         if (c2) SDL_FreeSurface(c2);
+        if (c3) SDL_FreeSurface(c3);
         return;
     }
 
-    int textW = (c1->w > c2->w) ? c1->w : c2->w;
-    int textH = c1->h + c2->h;
+    int textW = c1->w;
+    if (c2->w > textW) textW = c2->w;
+    if (show3 && c3->w > textW) textW = c3->w;
+
+    int textH = c1->h + c2->h + (show3 ? c3->h : 0);
 
     int winW, winH;
     SDL_GetWindowSize(window, &winW, &winH);
@@ -294,22 +407,24 @@ void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *fo
     glColor4f(1.f, 1.f, 1.f, 1.f);
     glBegin(GL_QUADS);
         glVertex2f(bgX, bgY);
-        glVertex2f(bgX+bgW, bgY);
-        glVertex2f(bgX+bgW, bgY+bgH);
-        glVertex2f(bgX, bgY+bgH);
+        glVertex2f(bgX + bgW, bgY);
+        glVertex2f(bgX + bgW, bgY + bgH);
+        glVertex2f(bgX, bgY + bgH);
     glEnd();
 
     // Black border
     glColor4f(0.f, 0.f, 0.f, 1.f);
     glBegin(GL_LINE_LOOP);
         glVertex2f(bgX, bgY);
-        glVertex2f(bgX+bgW, bgY);
-        glVertex2f(bgX+bgW, bgY+bgH);
-        glVertex2f(bgX, bgY+bgH);
+        glVertex2f(bgX + bgW, bgY);
+        glVertex2f(bgX + bgW, bgY + bgH);
+        glVertex2f(bgX, bgY + bgH);
     glEnd();
 
+    // Draw text lines
     draw_surface(c1, x, y);
     draw_surface(c2, x, y + c1->h);
+    if (show3) draw_surface(c3, x, y + c1->h + c2->h);
 
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
@@ -323,4 +438,5 @@ void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *fo
 
     SDL_FreeSurface(c1);
     SDL_FreeSurface(c2);
+    if (c3) SDL_FreeSurface(c3);
 }
