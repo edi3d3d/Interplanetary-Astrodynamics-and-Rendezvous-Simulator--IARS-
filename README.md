@@ -41,5 +41,17 @@ The Makefile uses `sdl2-config` to obtain compiler/linker flags.
 ## Contributing
 Open an issue or submit a pull request. Keep changes small and test both build and runtime behavior.
 
+## ToDo:
+- Implement the planetary motion for the orbits
+- Implement a way to see where all planets and objects are at even when the planet in not visible
+- Implement a way to teleport to a certain coordonate or a planet from a list
+<br><br>
+- Change the spheres to use less stacks/slices the further away they are
+<br><br>
+- Add small probes
+- Maybe implement the rendezvous in the next 0-200 years
+- More to be added
 ## License
-No license is included. Add a LICENSE file before publishing or pick an appropriate open-source
+MIT License
+
+Copyright (c) 2026 Dinu Eduard-Alexandru
