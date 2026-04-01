@@ -11,11 +11,7 @@ Vec3 world_to_cam_f_d(const Vec3d world, const Vec3d cam_pos)
                   (float)(world.z - cam_pos.z));
 }
 
-/* Recenter world so camera stays near origin without visual jump.
-   - cam must have a Vec3d position_d (authoritative double) and a float position (for rendering).
-   - bodies[].position must be Vec3d (double).
-   Call this once per frame (after camera_update and physics), before rendering. */
-// ...existing code...
+// Recenter world so camera stays near origin without visual jump.
 void floatingOrigin_d(Camera *cam, Planet *bodies, int num_bodies, double threshold)
 {
     if (!cam || !bodies || num_bodies <= 0) return;
