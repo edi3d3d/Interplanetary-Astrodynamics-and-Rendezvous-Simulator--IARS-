@@ -80,7 +80,10 @@ void camera_init(Camera *cam)
 
     cam->position = v3_set(-13124187.0f, 44131704.0f, 4859427.0f);
     cam->position = v3_set(0.0f, 0.0f, 10.0f); // debug
+    cam->position = v3_set(-13124187.376915, 44131704.035858, 4859427.670905); 
     cam->rot = q_set(1.0f, 0.0f, 0.0f, 0.0f);
+
+    cam->position_d = v3_set(cam->position.x, cam->position.y, cam->position.z); // initialize double-precision position to the same value
 
     cam->moveSpeed = 5.0f;
 
@@ -250,6 +253,8 @@ void camera_update(Camera *cam, const Uint8 *keyboardState, float dt)
         float scale = (float)cam->moveSpeed * (float)dt;
 
         cam->position = v3_add(cam->position, v3_scale(movementWorld, scale));
+        cam->position_d = v3_add(cam->position_d, v3_scale(movementWorld, scale));
+
 
         //from now on new method
 
@@ -320,58 +325,69 @@ void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *fo
     char line1[128];
     char line2[128];
     char line3[128];
+    char line4[128];
 
     snprintf(line1, sizeof(line1),
+             "Global Pos: %.2f, %.2f, %.2f",
+             cam->position_d.x, cam->position_d.y, cam->position_d.z);
+
+    snprintf(line2, sizeof(line2),
              "Pos: %.2f, %.2f, %.2f",
              cam->position.x, cam->position.y, cam->position.z);
 
-    snprintf(line2, sizeof(line2),
+    snprintf(line3, sizeof(line3),
              "Q(w,x,y,z): %.3f, %.3f, %.3f, %.3f",
              cam->rot.w, cam->rot.v.x, cam->rot.v.y, cam->rot.v.z);
 
-    int show3 = 0;
+    int show4 = 0;
     if (cam->speedInputActive) {
-        snprintf(line3, sizeof(line3), "Set moveSpeed: %s", cam->speedInputBuf);
-        show3 = 1;
+        snprintf(line4, sizeof(line4), "Set moveSpeed: %s", cam->speedInputBuf);
+        show4 = 1;
     } else {
         // optional: show current speed when not typing
-        snprintf(line3, sizeof(line3), "moveSpeed: %.3f", cam->moveSpeed);
-        show3 = 1;
+        snprintf(line4, sizeof(line4), "moveSpeed: %.3f", cam->moveSpeed);
+        show4 = 1;
     }
 
     SDL_Color black = {0, 0, 0, 255};
 
     SDL_Surface *s1 = TTF_RenderUTF8_Blended(font, line1, black);
     SDL_Surface *s2 = TTF_RenderUTF8_Blended(font, line2, black);
-    SDL_Surface *s3 = show3 ? TTF_RenderUTF8_Blended(font, line3, black) : NULL;
+    SDL_Surface *s3 = TTF_RenderUTF8_Blended(font, line3, black);
+    SDL_Surface *s4 = show4 ? TTF_RenderUTF8_Blended(font, line4, black) : NULL;
 
-    if (!s1 || !s2 || (show3 && !s3)) {
+    if (!s1 || !s2 || !s3 || (show4 && !s4)) {
         if (s1) SDL_FreeSurface(s1);
         if (s2) SDL_FreeSurface(s2);
         if (s3) SDL_FreeSurface(s3);
+        if (s4) SDL_FreeSurface(s4);
         return;
     }
 
     SDL_Surface *c1 = SDL_ConvertSurfaceFormat(s1, SDL_PIXELFORMAT_ARGB8888, 0);
     SDL_Surface *c2 = SDL_ConvertSurfaceFormat(s2, SDL_PIXELFORMAT_ARGB8888, 0);
-    SDL_Surface *c3 = show3 ? SDL_ConvertSurfaceFormat(s3, SDL_PIXELFORMAT_ARGB8888, 0) : NULL;
+    SDL_Surface *c3 = SDL_ConvertSurfaceFormat(s3, SDL_PIXELFORMAT_ARGB8888, 0);
+    SDL_Surface *c4 = show4 ? SDL_ConvertSurfaceFormat(s4, SDL_PIXELFORMAT_ARGB8888, 0) : NULL;
 
     SDL_FreeSurface(s1);
     SDL_FreeSurface(s2);
-    if (s3) SDL_FreeSurface(s3);
+    SDL_FreeSurface(s3);
+    if (s4) SDL_FreeSurface(s4);
 
-    if (!c1 || !c2 || (show3 && !c3)) {
+    if (!c1 || !c2 || !c3 || (show4 && !c4)) {
         if (c1) SDL_FreeSurface(c1);
         if (c2) SDL_FreeSurface(c2);
         if (c3) SDL_FreeSurface(c3);
+        if (c4) SDL_FreeSurface(c4);
         return;
     }
 
     int textW = c1->w;
     if (c2->w > textW) textW = c2->w;
-    if (show3 && c3->w > textW) textW = c3->w;
+    if (c3->w > textW) textW = c3->w;
+    if (show4 && c4->w > textW) textW = c4->w;
 
-    int textH = c1->h + c2->h + (show3 ? c3->h : 0);
+    int textH = c1->h + c2->h + c3->h + (show4 ? c4->h : 0);
 
     int winW, winH;
     SDL_GetWindowSize(window, &winW, &winH);
@@ -429,7 +445,8 @@ void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *fo
     // Draw text lines
     draw_surface(c1, x, y);
     draw_surface(c2, x, y + c1->h);
-    if (show3) draw_surface(c3, x, y + c1->h + c2->h);
+    draw_surface(c3, x, y + c1->h + c2->h);
+    if (show4) draw_surface(c4, x, y + c1->h + c2->h + c3->h);
 
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
@@ -443,5 +460,6 @@ void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *fo
 
     SDL_FreeSurface(c1);
     SDL_FreeSurface(c2);
-    if (c3) SDL_FreeSurface(c3);
+    SDL_FreeSurface(c3);
+    if (c4) SDL_FreeSurface(c4);
 }

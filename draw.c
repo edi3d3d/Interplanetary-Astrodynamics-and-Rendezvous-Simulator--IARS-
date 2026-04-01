@@ -52,14 +52,28 @@ void draw_cuboid(const Vec3 position, float width, float length, float height, c
     Vec3 c7 = v3_add(c5, v3_set(-width, -length, 0));
     Vec3 c8 = v3_add(c5, v3_set(-width, 0,     0));
 
-    draw_rectangle(c1, c2, c3, c4, colors[0]); // bottom
-    draw_rectangle(c8, c7, c6, c5, colors[1]); // top
+    Vec3 default_colors[6];
+    if(colors == NULL) {
+        default_colors[0] = v3_set(1, 0, 0); // red
+        default_colors[1] = v3_set(0, 1, 0); // green
+        default_colors[2] = v3_set(0, 0, 1); // blue
+        default_colors[3] = v3_set(1, 1, 0); // yellow
+        default_colors[4] = v3_set(1, 0, 1); // magenta
+        default_colors[5] = v3_set(0, 1, 1); // cyan
+    } else {
+        for (int i = 0; i < 6; ++i) {
+            default_colors[i] = colors[i];
+        }
+    }
 
-    draw_rectangle(c2, c1, c7, c8, colors[2]); // front
-    draw_rectangle(c4, c3, c5, c6, colors[3]); // back
+    draw_rectangle(c1, c2, c3, c4, default_colors[0]); // bottom
+    draw_rectangle(c8, c7, c6, c5, default_colors[1]); // top
 
-    draw_rectangle(c3, c2, c8, c5, colors[4]); // left
-    draw_rectangle(c1, c4, c6, c7, colors[5]); // right
+    draw_rectangle(c2, c1, c7, c8, default_colors[2]); // front
+    draw_rectangle(c4, c3, c5, c6, default_colors[3]); // back
+
+    draw_rectangle(c3, c2, c8, c5, default_colors[4]); // left
+    draw_rectangle(c1, c4, c6, c7, default_colors[5]); // right
 }
 
 // draw a simple colored cube centered at position of given size (half-extent)

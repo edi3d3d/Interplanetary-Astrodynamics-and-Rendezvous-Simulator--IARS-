@@ -11,7 +11,7 @@
 #include "camera.h"
 #include "draw.h"
 #include "planet.h"
-//#include "render_utils.h"
+#include "render_utils.h"
 
 // Load a reversed-Z perspective matrix into the current GL_PROJECTION matrix.
 // This maps far->0 and near->1, allowing greater precision for large far planes
@@ -256,13 +256,11 @@ int main()
         
         int body_count = sizeof(bodies)/sizeof(bodies[0]);
         
-        //floatingOrigin(&(cam.position), bodies, body_count, 1e3);
-
+        floatingOrigin_d(&cam, bodies, body_count, 1e5 /* 100k km threshold */);
+        
         for(int i = 0; i < body_count; i++)
+            //draw_cube(bodies[i].position, (float)bodies[i].radius, NULL);
             draw_sphere(bodies[i].position, (float)bodies[i].radius, 64, 64, colors[i]);
-
-
-
 
         camera_draw_coordinates(&cam, win, font);
 
@@ -284,8 +282,7 @@ int main()
 //TODO: https://chatgpt.com/c/699ed4a2-1d30-838e-b831-6fb78931a67b, the new coordonate system for camera and planets
 //*todo: also implement local camera coordonates instead of world-space movement, so that moving forward always moves along the camera's forward axis, etc. This will require computing the camera's local axes (forward, right, up) from its orientation and using those to update position based on input.
 
-//todo: add a simple 3D scene with some objects to navigate around, instead of just the single cube at the origin. This will help test the camera controls and make it more visually interesting. For example, add a grid floor and some cubes or spheres scattered around the scene.
-//todo: (make the bodies x times larger to be more visible at the start, then scale them to the real size) add a database of celestial bodies (planets, moons, asteroids) with their orbital parameters, and render them in the scene with accurate positions based on the current time. This will allow testing the camera controls in a more realistic space environment and provide a visual reference for navigation.
+//todo: (add a way to see where all planets are) add a database of celestial bodies (planets, moons, asteroids) with their orbital parameters, and render them in the scene with accurate positions based on the current time. This will allow testing the camera controls in a more realistic space environment and provide a visual reference for navigation.
 //todo: add a simple UI overlay to display a list of the celestial bodies currently in view, along with their distances from the camera. This will help with navigation and provide useful information about the scene. The UI can be implemented using SDL_ttf to render text as textures in OpenGL.
 //todo: add the realistic physics simulation of orbital mechanics, so that the celestial bodies move according to their orbits. This will allow testing the camera controls in a dynamic environment and provide a more immersive experience. The physics can be implemented using a simple numerical integrator (e.g. Euler or Verlet) to update the positions and velocities of the bodies each frame based on their gravitational interactions.
 //todo: add a step mode to the simulation, allowing the user to pause and step through the simulation one frame at a time. This will help with debugging and allow for more detailed observation of the orbital mechanics in action. The step mode can be toggled with a key press (e.g. spacebar) and will pause the simulation until the user presses a key to advance to the next frame.

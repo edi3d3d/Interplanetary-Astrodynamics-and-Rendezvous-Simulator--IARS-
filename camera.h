@@ -11,6 +11,8 @@ typedef struct Camera {
     // world-space camera position (computed from base + local)
     // (x, y, z) x is forward, y is left, z is up, weird
     //
+    Vec3 position_d; // double precision position for large scales (e.g. solar system)
+    //It stores the overall position of the camera in the world, not changed by local movements
     // x forward/back, y for left/right, z for up/down
     Vec3 position;
 
