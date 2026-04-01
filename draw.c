@@ -1,9 +1,5 @@
 #include "draw.h"
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 typedef struct {
     int stacks;
     int slices;
@@ -73,7 +69,8 @@ void draw_cube(const Vec3 position, float size, const Vec3 colors[]) {
 
 static GLuint build_unit_sphere_list(int stacks, int slices)
 {
-    const float TWO_PI = 2.0f * (float)M_PI;
+    const float PI = (float)M_PI;
+    const float TWO_PI = 2.0f * PI;
 
     GLuint id = glGenLists(1);
     glNewList(id, GL_COMPILE);
@@ -93,10 +90,10 @@ static GLuint build_unit_sphere_list(int stacks, int slices)
         cosT[j] = cosf(theta);
     }
 
-    // Draw a UNIT sphere centered at origin, radius = 1
+    // Generate sphere as quads (two triangles each) with consistent CCW winding
     for (int i = 0; i < stacks; ++i) {
-        float phi0 = (float)M_PI * ((float)i / (float)stacks - 0.5f);
-        float phi1 = (float)M_PI * ((float)(i + 1) / (float)stacks - 0.5f);
+        float phi0 = PI * ((float)i / (float)stacks - 0.5f);
+        float phi1 = PI * ((float)(i + 1) / (float)stacks - 0.5f);
 
         float cphi0 = cosf(phi0), sphi0 = sinf(phi0);
         float cphi1 = cosf(phi1), sphi1 = sinf(phi1);
@@ -106,17 +103,27 @@ static GLuint build_unit_sphere_list(int stacks, int slices)
         float r1 = cphi1;
         float y1 = sphi1;
 
-        glBegin(GL_TRIANGLE_STRIP);
-        for (int j = 0; j <= slices; ++j) {
-            float x0 = r0 * cosT[j];
-            float z0 = r0 * sinT[j];
-            glVertex3f(x0, z0, y0);
+        // For each slice, emit two triangles forming a quad with consistent winding
+        for (int j = 0; j < slices; ++j) {
+            int j1 = j;
+            int j2 = (j + 1);
 
-            float x1 = r1 * cosT[j];
-            float z1 = r1 * sinT[j];
-            glVertex3f(x1, z1, y1);
+            float x00 = r0 * cosT[j1]; float z00 = r0 * sinT[j1]; // v00
+            float x01 = r0 * cosT[j2]; float z01 = r0 * sinT[j2]; // v01
+            float x10 = r1 * cosT[j1]; float z10 = r1 * sinT[j1]; // v10
+            float x11 = r1 * cosT[j2]; float z11 = r1 * sinT[j2]; // v11
+
+            // Triangle 1: v00, v10, v11
+            glBegin(GL_TRIANGLES);
+            glVertex3f(x00, y0, z00);
+            glVertex3f(x10, y1, z10);
+            glVertex3f(x11, y1, z11);
+            // Triangle 2: v00, v11, v01
+            glVertex3f(x00, y0, z00);
+            glVertex3f(x11, y1, z11);
+            glVertex3f(x01, y0, z01);
+            glEnd();
         }
-        glEnd();
     }
 
     free(sinT);
@@ -163,6 +170,8 @@ void draw_sphere(const Vec3 center, float radius, int stacks, int slices, const 
     glTranslatef(center.x, center.y, center.z);
     glScalef(radius, radius, radius);
 
+    // Sphere mesh generated with consistent CCW winding; enable culling globally
+    // to let the GPU discard backfaces for performance.
     glColor3f(colors.x, colors.y, colors.z);
     glCallList(g_sphere.list_id);
 
