@@ -6,12 +6,13 @@
 #include <math.h>
 #include "vec3.h"
 #include "quaternions.h"
+#include "render_utils.h"
 
 typedef struct Camera {
-    // world-space camera position (computed from base + local)
-    // (x, y, z) x is forward, y is left, z is up, weird
-    //
-    // x forward/back, y for left/right, z for up/down
+    // float-precision world-space camera position (km)
+    Vec3 position_d;
+
+    // single-precision copy for legacy API
     Vec3 position;
 
     // point the camera can orbit around (used as base in orbit mode)
@@ -27,7 +28,7 @@ typedef struct Camera {
     int lastMouseY;
 
     // movement/rotation parameters
-    float moveSpeed;     // units per second for WSAD/vertical movement
+    float moveSpeed;     // units per second for WSAD/vertical movement (km/s)
     float sensitivityX;  // mouse X rotation sensitivity
     float sensitivityY;  // mouse Y rotation sensitivity
     float mouseRotateSpeed; // multiplier for mouse rotation when dragging

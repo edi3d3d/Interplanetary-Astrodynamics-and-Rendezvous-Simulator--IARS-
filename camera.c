@@ -78,7 +78,8 @@ void camera_init(Camera *cam)
 {
     if (!cam) return;
 
-    cam->position = v3_set(-5.0f, 0.0f, 0.0f);
+    cam->position = v3_set(-13124187.0f, 44131704.0f, 4859427.0f);
+    cam->position = v3_set(0.0f, 0.0f, 10.0f); // debug
     cam->rot = q_set(1.0f, 0.0f, 0.0f, 0.0f);
 
     cam->moveSpeed = 5.0f;
@@ -106,7 +107,6 @@ void camera_handle_event(Camera *cam, const SDL_Event *e)
 
     if (cam->speedInputActive) {
         if (e->type == SDL_TEXTINPUT) {
-            // Append allowed characters
             for (const char *p = e->text.text; *p; ++p) {
                 if (!is_allowed_speed_char(*p)) continue;
                 if (cam->speedInputLen < (int)sizeof(cam->speedInputBuf) - 1) {
@@ -229,11 +229,9 @@ void camera_update(Camera *cam, const Uint8 *keyboardState, float dt)
 
     // roll
     if (rollDir != 0) {
-        // roll speed in deg/sec
         const float rollSpeedDeg = 90.0f;
         float rollDeltaRad = (rollDir * rollSpeedDeg) * dt * DEG2RAD;
 
-        // roll axis = camera's current forward axis
         Vec3 localForward = v3_set(1.0f, 0.0f, 0.0f);
         Vec3 rollAxisWorld = q_rotate_vec3(cam->rot, localForward);
         rollAxisWorld = v3_normalize(rollAxisWorld);
@@ -242,12 +240,19 @@ void camera_update(Camera *cam, const Uint8 *keyboardState, float dt)
         cam->rot = q_mul(qRoll, cam->rot);
         cam->rot = q_normalize(cam->rot);
     }
-
-    // movement
+    // movement: convert local movement to world (float), then to float and apply to position_d
     if (!v3_is_zero(movementLocal)) {
         movementLocal = v3_normalize(movementLocal);
+        
         Vec3 movementWorld = q_rotate_vec3(cam->rot, movementLocal);
-        cam->position = v3_add(cam->position, v3_scale(movementWorld, cam->moveSpeed * dt));
+
+
+        float scale = (float)cam->moveSpeed * (float)dt;
+
+        cam->position = v3_add(cam->position, v3_scale(movementWorld, scale));
+
+        //from now on new method
+
     }
 }
 
@@ -258,8 +263,7 @@ void camera_apply_view(const Camera *cam)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    Vec3 pos = cam->position;
-
+    
     // Derive camera axes from quaternion
     Vec3 forward = q_rotate_vec3(cam->rot, v3_set(1.0f, 0.0f, 0.0f)); // localForward -> world
     Vec3 up      = q_rotate_vec3(cam->rot, v3_set(0.0f, 0.0f, 1.0f)); // localUp      -> world
@@ -267,10 +271,10 @@ void camera_apply_view(const Camera *cam)
     forward = v3_normalize(forward);
     up      = v3_normalize(up);
 
-    // center point = pos + forward (local forward, can be made larger but it doesnt matter that much >= 0)
-    Vec3 center = v3_add(pos, forward);
+    // When the eye is at the origin, look towards 'forward'
+    Vec3 center = v3_add(v3_set(0.0f, 0.0f, 0.0f), forward);
 
-    gluLookAt(pos.x, pos.y, pos.z,
+    gluLookAt(0.0, 0.0, 0.0,
               center.x, center.y, center.z,
               up.x, up.y, up.z);
 }
