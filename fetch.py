@@ -152,88 +152,150 @@ re_value_after = re.compile(r'[:=]\s*([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)')
 
 
 def parse_obj_data(resp: str):
+    """
+    Parse OBJ_DATA text from Horizons.
+    Returns (mass_kg_or_None, radius_m_or_None).
+    Handles:
+      - explicit mass "kg"
+      - GM in "km^3 / s^2" or "km^3 s^-2"
+      - diameter or radius in km (or m)
+      - formats like "Mass (10^24 kg) = 5.972" and "Diameter = 12756 km"
+    """
     mass_kg = None
-    diameter_m = None
-    GM_km3_s2 = None
+    radius_m = None
 
-    # split into lines and inspect lines that mention mass or diameter/radius/size
+    G = 6.67430e-11  # m^3 kg^-1 s^-2
+
+    # helper regexes
+    re_kg = re.compile(r'([+-]?\d+(?:\.\d+)?(?:[eEdD][+-]?\d+)?)\s*(?:kg)\b', re.IGNORECASE)
+    re_km = re.compile(r'([+-]?\d+(?:\.\d+)?(?:[eEdD][+-]?\d+)?)\s*(?:km)\b', re.IGNORECASE)
+    re_m = re.compile(r'([+-]?\d+(?:\.\d+)?(?:[eEdD][+-]?\d+)?)\s*(?:m)\b', re.IGNORECASE)
+    re_gm = re.compile(r'([+-]?\d+(?:\.\d+)?(?:[eEdD][+-]?\d+)?)\s*(?:km\^?3(?:/s\^?2| s\^-?2)|km\^3\s*s?-?2)', re.IGNORECASE)
+    re_pow10_unit = re.compile(r'\(10\^?([+-]?\d+)\s*([a-zA-Z/ ]+)\)', re.IGNORECASE)
+    re_named = re.compile(r'(diameter|radius|size|mass|gm)\s*[:=]\s*([^\n\r;]+)', re.IGNORECASE)
+
+    # scan lines for likely entries
     for line in resp.splitlines():
-        low = line.lower()
-        if 'mass' in low:
-            # check for direct kg match on the line
-            m = re_kg.search(line)
-            if m:
+        ln = line.strip()
+        if not ln:
+            continue
+        low = ln.lower()
+
+        # Prefer GM (standard gravitational parameter) if present; common format:
+        # "GM (km^3 / s^2) = 1.32712440018E11" or "GM = 1.32712440018E11 km^3/s^2"
+        if mass_kg is None and ('gm' in low or 'mu=' in low):
+            m_gm = re.search(r'([+-]?\d+(?:\.\d+)?(?:[eEdD][+-]?\d+)?)', ln)
+            if m_gm:
                 try:
-                    mass_kg = float(m.group(1))
-                    # keep searching for better match
+                    gm_val = float(m_gm.group(1).replace('D', 'E').replace('d', 'E'))
+                    # if the line mentions km^3, assume gm_val is in km^3/s^2; convert to m^3/s^2
+                    if 'km' in low:
+                        gm_m3_s2 = gm_val * 1e9
+                    else:
+                        gm_m3_s2 = gm_val
+                    # mass = GM / G
+                    mass_kg = gm_m3_s2 / G
                     continue
                 except Exception:
                     pass
-            # check for format like 'Mass (10^24 kg) = 1989.0'
-            m2 = re_pow10.search(line)
-            if m2:
-                exp = int(m2.group(1))
-                v = re_value_after.search(line)
-                if v:
-                    try:
-                        val = float(v.group(1))
-                        mass_kg = val * (10 ** exp)
+
+        # explicit mass patterns: either a value with 'kg' or a multiplier like 'Mass (10^30 kg) = 1.98847'
+        if mass_kg is None and 'mass' in low:
+            # case: 'Mass (10^30 kg) = 1.98847'
+            m_pow = re_pow10_unit.search(ln)
+            if m_pow:
+                try:
+                    exp = int(m_pow.group(1))
+                    mval = re_value_after.search(ln)
+                    if mval:
+                        val = float(mval.group(1).replace('D', 'E').replace('d', 'E'))
+                        mass_kg = val * (10.0 ** exp)
                         continue
+                except Exception:
+                    pass
+
+            # case: direct '1234.56 kg'
+            m_kg = re_kg.search(ln)
+            if m_kg:
+                try:
+                    mass_kg = float(m_kg.group(1).replace('D', 'E').replace('d', 'E'))
+                    continue
+                except Exception:
+                    pass
+
+            # fallback: look for a bare number after ':' or '=' and interpret as kg if plausibly large
+            mnum = re_value_after.search(ln)
+            if mnum:
+                try:
+                    val = float(mnum.group(1).replace('D', 'E').replace('d', 'E'))
+                    # heuristics: if val > 1e10 treat as kg; if val < 1e6 then probably not mass
+                    if val > 1e6:
+                        mass_kg = val
+                        continue
+                except Exception:
+                    pass
+
+        # diameter / radius in km or m
+        if any(k in low for k in ('diameter', 'radius', 'size')):
+            # check for km first
+            mkm = re_km.search(ln)
+            if mkm:
+                try:
+                    val_km = float(mkm.group(1).replace('D', 'E').replace('d', 'E'))
+                    if 'diameter' in low:
+                        radius_m = (val_km * 1000.0) / 2.0
+                    else:
+                        radius_m = val_km * 1000.0
+                except Exception:
+                    pass
+            else:
+                mm = re_m.search(ln)
+                if mm:
+                    try:
+                        val_m = float(mm.group(1).replace('D', 'E').replace('d', 'E'))
+                        if 'diameter' in low:
+                            radius_m = val_m / 2.0
+                        else:
+                            radius_m = val_m
                     except Exception:
                         pass
-        if any(k in low for k in ('diameter', 'size', 'radius')):
-            # look for km
-            m = re_km.search(line)
-            if m:
-                try:
-                    val_km = float(m.group(1))
-                    # if radius keyword, convert to diameter
-                    if 'radius' in low and not 'diameter' in low:
-                        diameter_km = val_km * 2.0
-                    else:
-                        diameter_km = val_km
-                    diameter_m = diameter_km * 1000.0
-                    # we can continue to look for mass
-                    continue
-                except Exception:
-                    pass
+                else:
+                    # try to extract numeric after '=' or ':'
+                    mval = re_value_after.search(ln)
+                    if mval:
+                        try:
+                            v = float(mval.group(1).replace('D', 'E').replace('d', 'E'))
+                            # guess unit km if value is order of thousands
+                            if v > 1000:
+                                # likely km diameter
+                                if 'diameter' in low:
+                                    radius_m = (v * 1000.0) / 2.0
+                                else:
+                                    radius_m = v * 1000.0
+                            else:
+                                # likely km or m ambiguous — prefer km -> m
+                                if 'diameter' in low:
+                                    radius_m = (v * 1000.0) / 2.0
+                                else:
+                                    radius_m = v * 1000.0
+                        except Exception:
+                            pass
 
-        # try to capture GM (standard gravitational parameter) if present
-        if 'gm' in low and GM_km3_s2 is None:
-            # look for a numeric token on the line
-            m = re.search(r'([+-]?\d+(?:\.\d+)?(?:[eEdD][+-]?\d+)?)', line)
-            if m:
-                tok = m.group(1).replace('D', 'E').replace('d', 'E')
-                try:
-                    GM_km3_s2 = float(tok)
-                except Exception:
-                    GM_km3_s2 = None
-                continue
-
-    # fallback: sometimes mass and diameter appear elsewhere without keywords; try to find first kg and first km in document
-    if mass_kg is None:
-        m = re_kg.search(resp)
-        if m:
-            try:
-                mass_kg = float(m.group(1))
-            except Exception:
-                mass_kg = None
-    # if we found GM but not mass, convert using G in km^3/kg/s^2
-    if mass_kg is None and GM_km3_s2 is not None:
-        G_km3_per_kg_s2 = 6.67430e-20
+    # final sanity checks: ensure positive values
+    if mass_kg is not None:
         try:
-            mass_kg = GM_km3_s2 / G_km3_per_kg_s2
+            if mass_kg <= 0:
+                mass_kg = None
         except Exception:
             mass_kg = None
-    if diameter_m is None:
-        m = re_km.search(resp)
-        if m:
-            try:
-                diameter_m = float(m.group(1)) * 1000.0
-            except Exception:
-                diameter_m = None
+    if radius_m is not None:
+        try:
+            if radius_m <= 0:
+                radius_m = None
+        except Exception:
+            radius_m = None
 
-    return mass_kg, diameter_m
+    return mass_kg, radius_m
 
 
 def get_obj_info(command_id: str):
@@ -245,9 +307,24 @@ def get_obj_info(command_id: str):
     }
     txt = fetch_text(params)
     if not txt:
-        return None, None
-    return parse_obj_data(txt)
+        return None, None, None
+    mass, diam = parse_obj_data(txt)
+    return mass, diam, txt
 
+
+# Authoritative fallbacks (mass in kg, diameter in meters)
+FALLBACK_PHYS = {
+    "Sun":     {"mass_kg": 1.98847e30, "diameter_m": 1.3927e9},
+    "Mercury": {"mass_kg": 3.3011e23,  "diameter_m": 4879400.0},
+    "Venus":   {"mass_kg": 4.8675e24,  "diameter_m": 12103600.0},
+    "Earth":   {"mass_kg": 5.97237e24, "diameter_m": 12742000.0},
+    "Mars":    {"mass_kg": 6.4171e23,  "diameter_m": 6779000.0},
+    "Jupiter": {"mass_kg": 1.89813e27, "diameter_m": 139820000.0},
+    "Saturn":  {"mass_kg": 5.6834e26,  "diameter_m": 116460000.0},
+    "Uranus":  {"mass_kg": 8.6810e25,  "diameter_m": 50724000.0},
+    "Neptune": {"mass_kg": 1.02413e26, "diameter_m": 49244000.0},
+    "Pluto":   {"mass_kg": 1.303e22,   "diameter_m": 2376600.0},
+}
 
 DISTANCE_UNIT = 1.0  # multiply positions by this in generated code (keeps units flexible)
 
@@ -264,13 +341,27 @@ def print_create_planet(out):
     vel = out.get('velocity_m_s')
     mass = out.get('mass_kg')
     diameter = out.get('diameter_m')
+    obj_raw = out.get('obj_raw')
 
     # compute radius from diameter if available
     radius_m = None
     if diameter is not None:
         radius_m = diameter / 2.0
 
-    # fallbacks
+    # apply fallbacks when parsed data is missing or invalid
+    fb = FALLBACK_PHYS.get(name)
+    if fb is not None:
+        if mass is None or not isinstance(mass, (int, float)) or mass <= 0.0:
+            mass = fb.get('mass_kg')
+            # if we used fallback, log raw OBJ_DATA snippet for debugging
+            if obj_raw:
+                print(f"[WARN] Using fallback mass for {name}; raw OBJ_DATA snippet:\n{obj_raw[:2000]}", file=sys.stderr)
+        if radius_m is None or not isinstance(radius_m, (int, float)) or radius_m <= 0.0:
+            diam_fb = fb.get('diameter_m')
+            if diam_fb is not None:
+                radius_m = diam_fb / 2.0
+
+    # final fallbacks to zeros
     if pos is None:
         px = py = pz = 0.0
     else:
@@ -279,24 +370,18 @@ def print_create_planet(out):
         vx = vy = vz = 0.0
     else:
         vx, vy, vz = vel
-    if mass is None:
-        mass_val = 0.0
-    else:
-        mass_val = mass
-    if radius_m is None:
-        radius_val = 0.0
-    else:
-        radius_val = radius_m
+    mass_val = mass if mass is not None else 0.0
+    radius_val = radius_m if radius_m is not None else 0.0
 
     # Print C-like create_planet block
-    print('create_planet(              // ' + name)
+    print('        create_planet(          // ' + name)
     # position: multiply by DISTANCE_UNIT in output as requested
     print('            v3_set({:.12f} * DISTANCE_UNIT, {:.12f} * DISTANCE_UNIT, {:.12f} * DISTANCE_UNIT),'.format(px, py, pz))
-    print('            v3_set({:.12f}, {:.12f}, {:.12f}),'.format(vx, vy, vz))
+    print('            v3_set({:.12f} * VELOCITY_UNIT, {:.12f} * VELOCITY_UNIT, {:.12f} * VELOCITY_UNIT),'.format(vx, vy, vz))
     # mass in kg (use scientific notation)
-    print('            {:.12e},'.format(mass_val))
+    print('            {:.12e} * MASS_UNIT,'.format(mass_val))
     # radius in meters
-    print('            {:.12f} * DISTANCE_UNIT'.format(radius_val))
+    print('            {:.12f} * SIZE_UNIT'.format(radius_val))
     print('        ),\n')
 
 
@@ -311,6 +396,7 @@ def main():
             'velocity_m_s': None,
             'mass_kg': None,
             'diameter_m': None,
+            'obj_raw': None,
             'error': None,
         }
 
@@ -324,9 +410,10 @@ def main():
         out['position_m'] = state['r_m']
         out['velocity_m_s'] = state['v_ms']
 
-        mass, diam = get_obj_info(cid)
+        mass, diam, txt = get_obj_info(cid)
         out['mass_kg'] = mass
         out['diameter_m'] = diam
+        out['obj_raw'] = txt
 
         print_create_planet(out)
 

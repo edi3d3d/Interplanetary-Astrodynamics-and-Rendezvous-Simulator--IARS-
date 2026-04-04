@@ -60,14 +60,16 @@ void camera_handle_event(Camera *cam, const SDL_Event *e);
 // Use SDL_GetKeyboardState(NULL) to get the keyboardState argument.
 void camera_update(Camera *cam, const Uint8 *keyboardState, float dt);
 
+// Convert world position (float) to camera-space position (float) for rendering.
+Vec3 world_to_cam_f_d(const Vec3 world, const Vec3 cam_pos);
+
 // Apply the camera transform (e.g. using gluLookAt or a custom matrix)
 void camera_apply_view(const Camera *cam);
 
 // Draw camera coordinates in the top-right corner of the given SDL_Window.
 // If SDL_ttf is available define USE_SDL_TTF at compile time and link with SDL2_ttf to render on-screen text.
 // Otherwise the function will print coordinates to stdout as a fallback.
-void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *font);
-
+void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *font, float time_warp);
 
 
 #endif // CAMERA_H

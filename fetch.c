@@ -11,6 +11,7 @@ typedef struct { float x,y,z; } Vec3;
 typedef struct {
     Vec3 r_km;
     Vec3 v_kms;
+    float mass_kg;
 } StateVector;
 
 typedef struct {
@@ -194,6 +195,7 @@ static void print_state(const char *name, const StateVector *s) {
     printf("%s:\n", name);
     printf("  r_km  = (%.6f, %.6f, %.6f)\n", s->r_km.x, s->r_km.y, s->r_km.z);
     printf("  v_kms = (%.9f, %.9f, %.9f)\n", s->v_kms.x, s->v_kms.y, s->v_kms.z);
+    printf("  mass = () ")
 }
 
 int main(void) {

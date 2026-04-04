@@ -48,7 +48,7 @@ static void camera_commit_speed_input(Camera *cam)
 
 static int is_allowed_speed_char(char c)
 {
-    return (c >= '0' && c <= '9') || c == '.' || c == '-';
+    return (c >= '0' && c <= '9') || c == '.' || c == '-' || c == 'e' || c == 'E' || c == '+';
 }
 
 static void camera_apply_yaw_pitch(Camera *cam, float yawDeltaRad, float pitchDeltaRad)
@@ -317,7 +317,7 @@ void draw_surface(SDL_Surface *surf, int drawX, int drawY)
     glDeleteTextures(1, &tex);
 };
 
-void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *font)
+void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *font, float time_warp)
 {
     if (!cam || !window || !font) return;
 
@@ -344,7 +344,7 @@ void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *fo
         show4 = 1;
     } else {
         // optional: show current speed when not typing
-        snprintf(line4, sizeof(line4), "moveSpeed: %.3f", cam->moveSpeed);
+        snprintf(line4, sizeof(line4), "moveSpeed: %.3f  warp: %.0fx", cam->moveSpeed, time_warp);
         show4 = 1;
     }
 
@@ -463,3 +463,11 @@ void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *fo
     if (c4) SDL_FreeSurface(c4);
 }
 
+
+/* convert double world -> camera-space float for rendering */
+Vec3 world_to_cam_f_d(const Vec3 world, const Vec3 cam_pos)
+{
+    return v3_set((world.x - cam_pos.x),
+                  (world.y - cam_pos.y),
+                  (world.z - cam_pos.z));
+}

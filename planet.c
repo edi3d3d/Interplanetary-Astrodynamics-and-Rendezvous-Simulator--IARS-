@@ -34,15 +34,18 @@ void planetGravityUpdate(Planet *body, int bodyCount, float dt) {
 
             body[i].acceleration = v3_add(body[i].acceleration, acceleration);
         }
-        body[i].velocity = v3_add(body[i].velocity, v3_scale(body[i].acceleration, 1.0f / body[i].mass));
     }
 
     
     for(int i = 0; i < bodyCount; i++){
         body[i].velocity = v3_add(body[i].velocity, v3_scale(body[i].acceleration, dt));
+    }
+
+    for(int i = 0; i < bodyCount; i++){
         body[i].position = v3_add(body[i].position, v3_scale(body[i].velocity, dt));
     }
 }
+
 double systemEnergy(const Planet* bodies, int bodyCount) {
     const double G = 6.67430e-11;
 

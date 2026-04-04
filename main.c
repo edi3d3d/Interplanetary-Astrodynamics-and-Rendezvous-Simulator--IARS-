@@ -13,12 +13,12 @@
 #include "planet.h"
 #include "render_utils.h"
 
-#define DISTANCE_UNIT 1e-3
+#define DISTANCE_UNIT 1
 
-#define SIZE_UNIT 1e10
+#define SIZE_UNIT 1
 #define MASS_UNIT 1
 
-#define VELOCITY_UNIT 1e-3
+#define VELOCITY_UNIT 1
 
 
 // Load a reversed-Z perspective matrix into the current GL_PROJECTION matrix.
@@ -102,74 +102,74 @@ int main()
     glClearColor(0.1f, 0.12f, 0.15f, 1.0f);
     
     Planet bodies[] = {
-        create_planet(              // Sun
+        create_planet(          // Sun
             v3_set(-401378746.763263583183 * DISTANCE_UNIT, -824301482.877707958221 * DISTANCE_UNIT, 18584913.457012210041 * DISTANCE_UNIT),
             v3_set(12.220387675628 * VELOCITY_UNIT, 1.203172840033 * VELOCITY_UNIT, -0.242563321028 * VELOCITY_UNIT),
-            9.0e+00 * MASS_UNIT,
-            696500000.0 * DISTANCE_UNIT
+            1.98841e+30 * MASS_UNIT,
+            348250000.0 * SIZE_UNIT
         ),
 
-        create_planet(              // Mercury
+        create_planet(          // Mercury
             v3_set(-13124187376.914699554443 * DISTANCE_UNIT, 44131704035.857925415039 * DISTANCE_UNIT, 4859427670.905398368835 * DISTANCE_UNIT),
             v3_set(-56637.275852667495 * VELOCITY_UNIT, -11474.976198730210 * VELOCITY_UNIT, 4257.660482477958 * VELOCITY_UNIT),
-            3.3020e+23 * MASS_UNIT,
-            2440530.0 * DISTANCE_UNIT
+            3.302e+23 * MASS_UNIT,
+            1220265.0 * SIZE_UNIT
         ),
 
-        create_planet(              // Venus
+        create_planet(          // Venus
             v3_set(107983085979.426208496094 * DISTANCE_UNIT, 3996020448.719231128693 * DISTANCE_UNIT, -6168923518.073746681213 * DISTANCE_UNIT),
             v3_set(-1688.900947375086 * VELOCITY_UNIT, 34827.313624638038 * VELOCITY_UNIT, 576.373455333890 * VELOCITY_UNIT),
-            4.86850e+24 * MASS_UNIT,
-            6051893.0 * DISTANCE_UNIT
+            4.8685e+24 * MASS_UNIT,
+            3025946.50 * SIZE_UNIT
         ),
 
-        create_planet(              // Earth
+        create_planet(          // Earth
             v3_set(-134589859317.681106567383 * DISTANCE_UNIT, 61696396595.356620788574 * DISTANCE_UNIT, 15173720.839854329824 * DISTANCE_UNIT),
             v3_set(-13042.240188447369 * VELOCITY_UNIT, -27118.517266343813 * VELOCITY_UNIT, 1.246773782363 * VELOCITY_UNIT),
-            6.371010e+27 * MASS_UNIT,
-            1740000.0 * DISTANCE_UNIT
+            5.97219e+24 * MASS_UNIT,
+            492.82370 * SIZE_UNIT
         ),
 
-        create_planet(              // Mars
+        create_planet(          // Mars
             v3_set(151179408197.374694824219 * DISTANCE_UNIT, -142541434528.847900390625 * DISTANCE_UNIT, -6668157338.424719810486 * DISTANCE_UNIT),
             v3_set(17480.684774819219 * VELOCITY_UNIT, 19776.342927945181 * VELOCITY_UNIT, -14.176740913331 * VELOCITY_UNIT),
             6.41710e+23 * MASS_UNIT,
-            10000.0 * DISTANCE_UNIT
+            1855.0 * SIZE_UNIT
         ),
 
-        create_planet(              // Jupiter
+        create_planet(          // Jupiter
             v3_set(-311402810884.615783691406 * DISTANCE_UNIT, 717326771284.569091796875 * DISTANCE_UNIT, 3993581443.098365783691 * DISTANCE_UNIT),
             v3_set(-12139.991384521780 * VELOCITY_UNIT, -4582.581316420221 * VELOCITY_UNIT, 290.769909651535 * VELOCITY_UNIT),
-            1.898190e+27 * MASS_UNIT,
-            -4000.0 * DISTANCE_UNIT
+            1.89819e+27 * MASS_UNIT,
+            34955500.0 * SIZE_UNIT
         ),
 
-        create_planet(              // Saturn
+        create_planet(          // Saturn
             v3_set(1417424173888.573974609375 * DISTANCE_UNIT, 82656894872.497604370117 * DISTANCE_UNIT, -57872866065.980880737305 * DISTANCE_UNIT),
             v3_set(-1093.819312532118 * VELOCITY_UNIT, 9622.798499016606 * VELOCITY_UNIT, -124.145966098733 * VELOCITY_UNIT),
-            5.68340e+26 * MASS_UNIT,
-            -4000.0 * DISTANCE_UNIT
+            5.6834e+26 * MASS_UNIT,
+            29116000.0 * SIZE_UNIT
         ),
 
-        create_planet(              // Uranus
-            v3_set(1449907357843.363037109375 * DISTANCE_UNIT, 2526897397546.379882812500 * DISTANCE_UNIT, -9399101941.723464965820 * DISTANCE_UNIT),
+        create_planet(          // Uranus
+            v3_set(1449907357843.363037109375 * DISTANCE_UNIT, 2526897397546.3798828125 * DISTANCE_UNIT, -9399101941.723464965820 * DISTANCE_UNIT),
             v3_set(-5956.878696625115 * VELOCITY_UNIT, 3071.778866025167 * VELOCITY_UNIT, 88.556546636943 * VELOCITY_UNIT),
-            8.68130e+25 * MASS_UNIT,
-            -4000.0 * DISTANCE_UNIT
+            8.6813e+25 * MASS_UNIT,
+            12681000.0 * SIZE_UNIT
         ),
 
-        create_planet(              // Neptune
-            v3_set(4467671534891.410156250000 * DISTANCE_UNIT, 102308478062.707595825195 * DISTANCE_UNIT, -105068965806.800689697266 * DISTANCE_UNIT),
+        create_planet(          // Neptune
+            v3_set(4467671534891.41015625 * DISTANCE_UNIT, 102308478062.707595825195 * DISTANCE_UNIT, -105068965806.800689697266 * DISTANCE_UNIT),
             v3_set(-160.993904220706 * VELOCITY_UNIT, 5465.729506548466 * VELOCITY_UNIT, -108.542111613209 * VELOCITY_UNIT),
-            1.024090e+26 * MASS_UNIT,
-            -15000.0 * DISTANCE_UNIT
+            1.02409e+26 * MASS_UNIT,
+            12312000.0 * SIZE_UNIT
         ),
 
-        create_planet(              // Pluto
-            v3_set(2897954412330.601074218750 * DISTANCE_UNIT, -4428565391903.326171875000 * DISTANCE_UNIT, -364378457214.714538574219 * DISTANCE_UNIT),
+        create_planet(          // Pluto
+            v3_set(2897954412330.601074218750 * DISTANCE_UNIT, -4428565391903.326171875 * DISTANCE_UNIT, -364378457214.714538574219 * DISTANCE_UNIT),
             v3_set(4691.407215387665 * VELOCITY_UNIT, 1747.668070666197 * VELOCITY_UNIT, -1562.327369456416 * VELOCITY_UNIT),
-            1.3070e+22 * MASS_UNIT,
-            5000.0 * DISTANCE_UNIT
+            1.307e+22 * MASS_UNIT,
+            594150.0 * SIZE_UNIT
         )
     };
     /*
@@ -194,6 +194,12 @@ int main()
     Camera cam;
     camera_init(&cam);
 
+    /* Time warp: multiply physics timestep by this factor.
+       Controls: '+' or keypad '+' doubles warp, '-' halves warp, '0' resets to 1x. */
+    float time_warp = 1.0f;
+    const float time_warp_min = 1e-6f;
+    const float time_warp_max = 1e8f;
+
     Uint32 lastTicks = SDL_GetTicks();
     int running = 1;
     SDL_Event e;
@@ -217,8 +223,26 @@ int main()
                 load_reversed_perspective(60.0f, (float)w / (float)h, 0.1f, 1e12f);
                 glMatrixMode(GL_MODELVIEW);
             }
-            camera_handle_event(&cam, &e);
-        }
+            else if (e.type == SDL_KEYDOWN) {
+                SDL_Keycode k = e.key.keysym.sym;
+                if (k == SDLK_EQUALS || k == SDLK_PLUS || k == SDLK_KP_PLUS) {
+                    time_warp *= 2.0f;
+                    if (time_warp > time_warp_max) time_warp = time_warp_max;
+                    printf("Time warp: %.0fx\n", time_warp);
+                    continue;
+                } else if (k == SDLK_MINUS || k == SDLK_KP_MINUS) {
+                    time_warp *= 0.5f;
+                    if (time_warp < time_warp_min) time_warp = time_warp_min;
+                    printf("Time warp: %.0fx\n", time_warp);
+                    continue;
+                } else if (k == SDLK_0 || k == SDLK_KP_0) {
+                    time_warp = 1.0f;
+                    printf("Time warp reset to 1x\n");
+                    continue;
+                }
+            }
+             camera_handle_event(&cam, &e);
+         }
 
         // update camera from keyboard each frame
         const Uint8 *keyboardState = SDL_GetKeyboardState(NULL);
@@ -265,26 +289,21 @@ int main()
         };
         floatingOrigin_d(&cam, bodies, bodyCount, 1e5 /* 100k km threshold */);
 
-        planetGravityUpdate(bodies, bodyCount, dt);
+        float sim_dt = dt * time_warp;
+        planetGravityUpdate(bodies, bodyCount, sim_dt);
 
         for(int i = 0; i < bodyCount; i++)
             //draw_cube(bodies[i].position, (float)bodies[i].radius, NULL);
-            draw_sphere(bodies[i].position, (float)bodies[i].radius, 64, 64, colors[i]);
+            //draw_sphere(bodies[i].position, (float)bodies[i].radius, 64, 64, colors[i]);
+            draw_planet_or_indicator(bodies[i], &cam, w, h, 64, 64, colors[i], 20.0f);
 
 
         float currentEnergy = systemEnergy(bodies, bodyCount);
         float energyDifference = currentEnergy - startingEnergy;
         printf("Current Energy: %f, Energy Difference: %f\n", currentEnergy, energyDifference);
 
-        camera_draw_coordinates(&cam, win, font);
-
+        camera_draw_coordinates(&cam, win, font, time_warp);
         SDL_GL_SwapWindow(win);
-
-
-
-
-
-
 
     }
 

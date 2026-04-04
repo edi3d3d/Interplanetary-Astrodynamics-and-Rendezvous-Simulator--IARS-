@@ -1,15 +1,6 @@
 #include "render_utils.h"
-#include "planet.h"
-#include "camera.h"
 #include <math.h>
 
-/* convert double world -> camera-space float for rendering */
-Vec3 world_to_cam_f_d(const Vec3d world, const Vec3d cam_pos)
-{
-    return v3_set((float)(world.x - cam_pos.x),
-                  (float)(world.y - cam_pos.y),
-                  (float)(world.z - cam_pos.z));
-}
 
 // Recenter world so camera stays near origin without visual jump.
 void floatingOrigin_d(Camera *cam, Planet *bodies, int num_bodies, double threshold)
@@ -28,3 +19,4 @@ void floatingOrigin_d(Camera *cam, Planet *bodies, int num_bodies, double thresh
 
     cam->position = v3_set(0.0f, 0.0f, 0.0f);
 }
+
