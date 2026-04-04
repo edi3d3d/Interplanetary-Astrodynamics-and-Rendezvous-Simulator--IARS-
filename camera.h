@@ -68,4 +68,6 @@ void camera_apply_view(const Camera *cam);
 // Otherwise the function will print coordinates to stdout as a fallback.
 void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *font);
 
+
+
 #endif // CAMERA_H

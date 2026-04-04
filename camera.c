@@ -80,7 +80,6 @@ void camera_init(Camera *cam)
 
     cam->position = v3_set(-13124187.0f, 44131704.0f, 4859427.0f);
     cam->position = v3_set(0.0f, 0.0f, 10.0f); // debug
-    cam->position = v3_set(-13124187.376915, 44131704.035858, 4859427.670905); 
     cam->rot = q_set(1.0f, 0.0f, 0.0f, 0.0f);
 
     cam->position_d = v3_set(cam->position.x, cam->position.y, cam->position.z); // initialize double-precision position to the same value
@@ -463,3 +462,4 @@ void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *fo
     SDL_FreeSurface(c3);
     if (c4) SDL_FreeSurface(c4);
 }
+

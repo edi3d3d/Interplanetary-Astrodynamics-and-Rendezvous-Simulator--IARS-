@@ -6,7 +6,7 @@
 #include <time.h>
 #include <curl/curl.h>
 
-typedef struct { double x,y,z; } Vec3;
+typedef struct { float x,y,z; } Vec3;
 
 typedef struct {
     Vec3 r_km;
@@ -62,7 +62,7 @@ static int parse_first_statevec(const char *resp, StateVector *out) {
     line[len] = '\0';
 
     // Collect 7 doubles: JD, X, Y, Z, VX, VY, VZ
-    double vals[7];
+    float vals[7];
     int found = 0;
 
     char *tmp = strdup(line);
@@ -76,7 +76,7 @@ static int parse_first_statevec(const char *resp, StateVector *out) {
         while (*tok == ' ' || *tok == '\t') tok++;
 
         char *endp = NULL;
-        double v = strtod(tok, &endp);
+        float v = strtod(tok, &endp);
         if (endp != tok) {
             vals[found++] = v;
         }
