@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -std=c11 -O0 $(shell sdl2-config --cflags)
+CFLAGS=-Wall -Wextra -std=c11 -O3 $(shell sdl2-config --cflags)
 LDFLAGS=
 LIBS=$(shell sdl2-config --libs) -lSDL2_ttf -lGL -lGLU -lm -ldl -lpthread
 TARGET=main

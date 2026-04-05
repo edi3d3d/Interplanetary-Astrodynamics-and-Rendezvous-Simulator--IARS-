@@ -8,8 +8,7 @@ void floatingOrigin_d(Camera *cam, Planet *bodies, int num_bodies, double thresh
     if (!cam || !bodies || num_bodies <= 0) return;
 
     /* use squared length to avoid sqrt and compare squares consistently */
-
-    if (v3_len(cam->position) <= threshold) return;
+    if (v3_len2(cam->position) <= threshold * threshold) return;
 
     for (int i = 0; i < num_bodies; ++i) {
         bodies[i].position.x -= cam->position.x;

@@ -12,13 +12,7 @@
 #include "draw.h"
 #include "planet.h"
 #include "render_utils.h"
-
-#define DISTANCE_UNIT 1
-
-#define SIZE_UNIT 1
-#define MASS_UNIT 1
-
-#define VELOCITY_UNIT 1
+#include "units.h"
 
 
 // Load a reversed-Z perspective matrix into the current GL_PROJECTION matrix.
@@ -189,23 +183,23 @@ int main()
     };
     */
 
-    float startingEnergy = systemEnergy(bodies, sizeof(bodies)/sizeof(bodies[0]));
+    //float startingEnergy = systemEnergy(bodies, sizeof(bodies)/sizeof(bodies[0]));
 
     Camera cam;
     camera_init(&cam);
 
     /* Time warp: multiply physics timestep by this factor.
        Controls: '+' or keypad '+' doubles warp, '-' halves warp, '0' resets to 1x. */
-    float time_warp = 1.0f;
-    const float time_warp_min = 1e-6f;
-    const float time_warp_max = 1e8f;
+    DATA time_warp = 1.0f;
+    const DATA time_warp_min = 1e-6f;
+    const DATA time_warp_max = 1e8f;
 
     Uint32 lastTicks = SDL_GetTicks();
     int running = 1;
     SDL_Event e;
     while (running) {
         Uint32 now = SDL_GetTicks();
-        float dt = (now - lastTicks) / 1000.0f;
+        DATA dt = (now - lastTicks) / 1000.0f;
         //if (dt <= 0.0f) dt = 0.001f;
         //if (dt > 0.2f) dt = 0.02f; // clamp large deltas
         lastTicks = now;
@@ -289,8 +283,13 @@ int main()
         };
         floatingOrigin_d(&cam, bodies, bodyCount, 1e5 /* 100k km threshold */);
 
-        float sim_dt = dt * time_warp;
-        planetGravityUpdate(bodies, bodyCount, sim_dt);
+        DATA sim_dt = dt * time_warp;
+
+        GravityWorkspace gravityWs;
+        gravityWs.aNew = (Vec3 *)malloc(sizeof(Vec3) * bodyCount);
+        gravityWs.aOld = (Vec3 *)malloc(sizeof(Vec3) * bodyCount);
+
+        planetGravityUpdate(bodies, bodyCount, sim_dt, &gravityWs);
 
         for(int i = 0; i < bodyCount; i++)
             //draw_cube(bodies[i].position, (float)bodies[i].radius, NULL);
@@ -298,15 +297,15 @@ int main()
             draw_planet_or_indicator(bodies[i], &cam, w, h, 64, 64, colors[i], 20.0f);
 
 
-        float currentEnergy = systemEnergy(bodies, bodyCount);
-        float energyDifference = currentEnergy - startingEnergy;
-        printf("Current Energy: %f, Energy Difference: %f\n", currentEnergy, energyDifference);
+        //float currentEnergy = systemEnergy(bodies, bodyCount);
+        //float energyDifference = currentEnergy - startingEnergy;
+        //printf("Current Energy: %f, Energy Difference: %f\n", currentEnergy, energyDifference);
 
         camera_draw_coordinates(&cam, win, font, time_warp);
         SDL_GL_SwapWindow(win);
 
     }
-
+        
     TTF_CloseFont(font);
     TTF_Quit();
     

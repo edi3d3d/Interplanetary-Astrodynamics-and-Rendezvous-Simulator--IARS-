@@ -1,11 +1,11 @@
 #include "quaternions.h"
 #include <math.h>
 
-Quaternion q_set(float w, float x, float y, float z) {
+Quaternion q_set(DATA w, DATA x, DATA y, DATA z) {
     return (Quaternion){w, v3_set(x,y,z)};
 }
 
-Quaternion q_set_vec(float w, const Vec3 v) {
+Quaternion q_set_vec(DATA w, const Vec3 v) {
     return q_set(w, v.x, v.y, v.z);
 }
 
@@ -27,7 +27,7 @@ Quaternion q_mul(const Quaternion a, const Quaternion b){
 }
 
 Quaternion q_normalize(const Quaternion q){
-    float len = sqrtf(q.w*q.w + v3_len2(q.v));
+    float len = sqrtl(q.w*q.w + v3_len2(q.v));
     if (len > 1e-6f) {
         float invLen = 1.0f / len;
         return q_set_vec(q.w * invLen, v3_scale(q.v, invLen));
@@ -35,10 +35,10 @@ Quaternion q_normalize(const Quaternion q){
     return q_set(1,0,0,0); // default to identity quaternion if zero-length
 }
 
-Quaternion q_from_axis_angle(Vec3 axis_unit, float angleRad)
+Quaternion q_from_axis_angle(Vec3 axis_unit, DATA angleRad)
 {
-    float h = 0.5f * angleRad;
-    float s = sinf(h);
+    DATA h = 0.5f * angleRad;
+    DATA s = sinf(h);
     return q_normalize(q_set(cosf(h), axis_unit.x*s, axis_unit.y*s, axis_unit.z*s));
 }
 

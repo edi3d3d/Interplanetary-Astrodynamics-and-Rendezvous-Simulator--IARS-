@@ -327,15 +327,15 @@ void camera_draw_coordinates(const Camera *cam, SDL_Window *window, TTF_Font *fo
     char line4[128];
 
     snprintf(line1, sizeof(line1),
-             "Global Pos: %.2f, %.2f, %.2f",
+             "Global Pos: %.2Lf, %.2Lf, %.2Lf",
              cam->position_d.x, cam->position_d.y, cam->position_d.z);
 
     snprintf(line2, sizeof(line2),
-             "Pos: %.2f, %.2f, %.2f",
+             "Pos: %.2Lf, %.2Lf, %.2Lf",
              cam->position.x, cam->position.y, cam->position.z);
 
     snprintf(line3, sizeof(line3),
-             "Q(w,x,y,z): %.3f, %.3f, %.3f, %.3f",
+             "Q(w,x,y,z): %.3Lf, %.3Lf, %.3Lf, %.3Lf",
              cam->rot.w, cam->rot.v.x, cam->rot.v.y, cam->rot.v.z);
 
     int show4 = 0;
