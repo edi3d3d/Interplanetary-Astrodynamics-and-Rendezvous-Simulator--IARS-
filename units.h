@@ -9,8 +9,10 @@
 
 #define VELOCITY_UNIT 1
 
-#define DATA long double
-#define SMALL_DATA double
+// Use double for DATA (faster than long double on most platforms)
+#define DATA double
+// SMALL_DATA for performance-critical temporary math (single-precision)
+#define SMALL_DATA float
 
 
 #ifndef M_PI

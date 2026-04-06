@@ -27,9 +27,9 @@ Quaternion q_mul(const Quaternion a, const Quaternion b){
 }
 
 Quaternion q_normalize(const Quaternion q){
-    float len = sqrtl(q.w*q.w + v3_len2(q.v));
-    if (len > 1e-6f) {
-        float invLen = 1.0f / len;
+    DATA len = sqrt(q.w*q.w + v3_len2(q.v));
+    if (len > (DATA)1e-12) {
+        DATA invLen = (DATA)1.0 / len;
         return q_set_vec(q.w * invLen, v3_scale(q.v, invLen));
     }
     return q_set(1,0,0,0); // default to identity quaternion if zero-length
@@ -37,9 +37,9 @@ Quaternion q_normalize(const Quaternion q){
 
 Quaternion q_from_axis_angle(Vec3 axis_unit, DATA angleRad)
 {
-    DATA h = 0.5f * angleRad;
-    DATA s = sinf(h);
-    return q_normalize(q_set(cosf(h), axis_unit.x*s, axis_unit.y*s, axis_unit.z*s));
+    DATA h = (DATA)0.5 * angleRad;
+    DATA s = sin(h);
+    return q_normalize(q_set(cos(h), axis_unit.x*s, axis_unit.y*s, axis_unit.z*s));
 }
 
 Vec3 q_rotate_vec3(Quaternion q, Vec3 v)

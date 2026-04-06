@@ -166,24 +166,8 @@ int main()
             594150.0 * SIZE_UNIT
         )
     };
-    /*
-    Planet bodies[] = {
-        create_planet(              // test1
-            v3_set(0, 0, 0),
-            v3_set(1.0, 1.0, 1.1),
-            1e2,
-            1.0
-        ),
-        create_planet(              // test2
-            v3_set(10.0, 10.0, 10.0),
-            v3_set(0.0, 0.0, 0.0),
-            1e10,
-            1.0
-        )
-    };
-    */
 
-    //float startingEnergy = systemEnergy(bodies, sizeof(bodies)/sizeof(bodies[0]));
+    double startingEnergy = systemEnergy(bodies, sizeof(bodies)/sizeof(bodies[0]));
 
     Camera cam;
     camera_init(&cam);
@@ -297,9 +281,9 @@ int main()
             draw_planet_or_indicator(bodies[i], &cam, w, h, 64, 64, colors[i], 20.0f);
 
 
-        //float currentEnergy = systemEnergy(bodies, bodyCount);
-        //float energyDifference = currentEnergy - startingEnergy;
-        //printf("Current Energy: %f, Energy Difference: %f\n", currentEnergy, energyDifference);
+        double currentEnergy = systemEnergy(bodies, bodyCount);
+        double energyDifference = currentEnergy - startingEnergy;
+        printf("Current Energy: %f, Energy Difference: %f\n", currentEnergy, energyDifference);
 
         camera_draw_coordinates(&cam, win, font, time_warp);
         SDL_GL_SwapWindow(win);

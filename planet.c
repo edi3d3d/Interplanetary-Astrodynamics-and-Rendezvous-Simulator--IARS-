@@ -24,9 +24,9 @@ void change_planet_position(Planet *planet, Vec3 dt, int add) {
 }
 
 static void computeAccelerations(const Planet *bodies, Vec3 *acc, int bodyCount) {
-    const DATA G = 6.67430e-11f;
-    const DATA eps = 1e-3f;
-    const DATA eps2 = eps * eps;
+    const SMALL_DATA G = 6.67430e-11f;
+    const SMALL_DATA eps = 1e-3f;
+    const SMALL_DATA eps2 = eps * eps;
 
     for (int i = 0; i < bodyCount; ++i) {
         acc[i].x = 0.0f;
@@ -45,20 +45,24 @@ static void computeAccelerations(const Planet *bodies, Vec3 *acc, int bodyCount)
             const DATA ry = bodies[j].position.y - iy;
             const DATA rz = bodies[j].position.z - iz;
 
-            const DATA distSq = rx * rx + ry * ry + rz * rz + eps2;
-            const DATA invDist = 1.0f / sqrtf(distSq);
-            const DATA invDist3 = invDist * invDist * invDist;
+            SMALL_DATA srx = (SMALL_DATA)rx;
+            SMALL_DATA sry = (SMALL_DATA)ry;
+            SMALL_DATA srz = (SMALL_DATA)rz;
 
-            const DATA scaleI = G * bodies[j].mass * invDist3;
-            const DATA scaleJ = G * mi * invDist3;
+            SMALL_DATA distSq = srx * srx + sry * sry + srz * srz + eps2;
+            SMALL_DATA invDist = 1.0f / sqrt(distSq);
+            SMALL_DATA invDist3 = invDist * invDist * invDist;
 
-            acc[i].x += rx * scaleI;
-            acc[i].y += ry * scaleI;
-            acc[i].z += rz * scaleI;
+            SMALL_DATA scaleI = G * (SMALL_DATA)bodies[j].mass * invDist3;
+            SMALL_DATA scaleJ = G * (SMALL_DATA)mi * invDist3;
 
-            acc[j].x -= rx * scaleJ;
-            acc[j].y -= ry * scaleJ;
-            acc[j].z -= rz * scaleJ;
+            acc[i].x += (DATA)(srx * scaleI);
+            acc[i].y += (DATA)(sry * scaleI);
+            acc[i].z += (DATA)(srz * scaleI);
+
+            acc[j].x -= (DATA)(srx * scaleJ);
+            acc[j].y -= (DATA)(sry * scaleJ);
+            acc[j].z -= (DATA)(srz * scaleJ);
         }
     }
 }
@@ -69,31 +73,52 @@ void planetGravityUpdate(Planet *bodies, int bodyCount, DATA dt, GravityWorkspac
         return;
     }
 
-    const DATA maxStep = 1.0f;
-    int steps = (int)ceilf(dt / maxStep);
+    const SMALL_DATA maxStep = 1.0f;
+    int steps = (int)ceil((double)dt / (double)maxStep);
     if (steps < 1) {
         steps = 1;
     }
 
-    const DATA stepDt = dt / (DATA)steps;
-    const DATA halfDt2 = 0.5f * stepDt * stepDt;
-    const DATA halfDt = 0.5f * stepDt;
+    const SMALL_DATA stepDt = (SMALL_DATA)dt / (SMALL_DATA)steps;
+    const SMALL_DATA halfDt2 = 0.5f * stepDt * stepDt;
+    const SMALL_DATA halfDt = 0.5f * stepDt;
 
     for (int s = 0; s < steps; ++s) {
         computeAccelerations(bodies, ws->aOld, bodyCount);
 
         for (int i = 0; i < bodyCount; ++i) {
-            bodies[i].position.x += bodies[i].velocity.x * stepDt + ws->aOld[i].x * halfDt2;
-            bodies[i].position.y += bodies[i].velocity.y * stepDt + ws->aOld[i].y * halfDt2;
-            bodies[i].position.z += bodies[i].velocity.z * stepDt + ws->aOld[i].z * halfDt2;
+            /* velocity and accel buffers are DATA; treat them as SMALL_DATA for stepping */
+            SMALL_DATA vx = (SMALL_DATA)bodies[i].velocity.x;
+            SMALL_DATA vy = (SMALL_DATA)bodies[i].velocity.y;
+            SMALL_DATA vz = (SMALL_DATA)bodies[i].velocity.z;
+
+            SMALL_DATA ax = (SMALL_DATA)ws->aOld[i].x;
+            SMALL_DATA ay = (SMALL_DATA)ws->aOld[i].y;
+            SMALL_DATA az = (SMALL_DATA)ws->aOld[i].z;
+
+            SMALL_DATA dx = vx * stepDt + ax * halfDt2;
+            SMALL_DATA dy = vy * stepDt + ay * halfDt2;
+            SMALL_DATA dz = vz * stepDt + az * halfDt2;
+
+            bodies[i].position.x += (DATA)dx;
+            bodies[i].position.y += (DATA)dy;
+            bodies[i].position.z += (DATA)dz;
         }
 
         computeAccelerations(bodies, ws->aNew, bodyCount);
 
         for (int i = 0; i < bodyCount; ++i) {
-            bodies[i].velocity.x += (ws->aOld[i].x + ws->aNew[i].x) * halfDt;
-            bodies[i].velocity.y += (ws->aOld[i].y + ws->aNew[i].y) * halfDt;
-            bodies[i].velocity.z += (ws->aOld[i].z + ws->aNew[i].z) * halfDt;
+            SMALL_DATA aoldx = (SMALL_DATA)ws->aOld[i].x;
+            SMALL_DATA aoldy = (SMALL_DATA)ws->aOld[i].y;
+            SMALL_DATA aoldz = (SMALL_DATA)ws->aOld[i].z;
+
+            SMALL_DATA anewx = (SMALL_DATA)ws->aNew[i].x;
+            SMALL_DATA anewy = (SMALL_DATA)ws->aNew[i].y;
+            SMALL_DATA anewz = (SMALL_DATA)ws->aNew[i].z;
+
+            bodies[i].velocity.x += (DATA)((aoldx + anewx) * halfDt);
+            bodies[i].velocity.y += (DATA)((aoldy + anewy) * halfDt);
+            bodies[i].velocity.z += (DATA)((aoldz + anewz) * halfDt);
 
             bodies[i].acceleration = ws->aNew[i];
         }

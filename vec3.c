@@ -41,16 +41,16 @@ DATA v3_len2(const Vec3 a) {
 }
 
 DATA v3_len(const Vec3 a) {
-    return sqrtl(v3_len2(a));
+    return sqrt(v3_len2(a));
 }
 
 int v3_is_zero(const Vec3 a) {
-    return v3_len2(a) < 1e-6f;
+    return v3_len2(a) < (DATA)1e-12;
 }
 
 Vec3 v3_normalize(const Vec3 a) {
     DATA l = v3_len(a);
-    if (l > 1e-6f) return v3_scale(a, 1.0f / l);
+    if (l > (DATA)1e-12) return v3_scale(a, (DATA)1.0 / l);
     return v3_set(0,0,0);
 }
 
@@ -70,5 +70,5 @@ void v3_scale_inplace(Vec3 *a, DATA s) {
 }
 
 void v3_print(const Vec3 a) {
-    printf("(%.3Lf, %.3Lf, %.3Lf)\n", a.x, a.y, a.z);
+    printf("(%.3f, %.3f, %.3f)\n", (double)a.x, (double)a.y, (double)a.z);
 }
