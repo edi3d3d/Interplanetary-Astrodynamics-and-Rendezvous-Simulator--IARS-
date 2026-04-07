@@ -195,7 +195,7 @@ static void print_state(const char *name, const StateVector *s) {
     printf("%s:\n", name);
     printf("  r_km  = (%.6f, %.6f, %.6f)\n", s->r_km.x, s->r_km.y, s->r_km.z);
     printf("  v_kms = (%.9f, %.9f, %.9f)\n", s->v_kms.x, s->v_kms.y, s->v_kms.z);
-    printf("  mass = () ")
+    printf("  mass = (%.6f)\n", s->mass_kg);
 }
 
 int main(void) {
@@ -204,16 +204,9 @@ int main(void) {
     const char *UTC_STOP_TIME = "2026-02-25";
 
     struct { const char *name; const char *id; } bodies[] = {
-        {"Sun",     "10"},
-        {"Mercury", "199"},
-        {"Venus",   "299"},
-        {"Earth",   "399"},
-        {"Mars",    "499"},
-        {"Jupiter", "599"},
-        {"Saturn",  "699"},
-        {"Uranus",  "799"},
-        {"Neptune", "899"},
-        {"Pluto",   "999"},
+        
+        {"Moon",     "301"},
+        {"Earth",    "399"},
     };
 
     for (size_t i = 0; i < sizeof(bodies)/sizeof(bodies[0]); i++) {

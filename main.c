@@ -123,6 +123,13 @@ int main()
             5.97219e+24 * MASS_UNIT,
             492.82370 * SIZE_UNIT
         ),
+        
+            create_planet(          // Moon
+                v3_set(-134395250360.897506713867 * DISTANCE_UNIT, 62009711534.313171386719 * DISTANCE_UNIT, 48684631.631419062614 * DISTANCE_UNIT),
+                v3_set(-13943.79194598174 * VELOCITY_UNIT, -26566.514478612968 * VELOCITY_UNIT, 18.344697648217 * VELOCITY_UNIT),
+                7.349e+22 * MASS_UNIT,
+                775.0 * SIZE_UNIT
+            ),
 
         create_planet(          // Mars
             v3_set(151179408197.374694824219 * DISTANCE_UNIT, -142541434528.847900390625 * DISTANCE_UNIT, -6668157338.424719810486 * DISTANCE_UNIT),
@@ -253,18 +260,21 @@ int main()
         glShadeModel(GL_SMOOTH);
 
         Vec3 colors[] = {
-            v3_set(1.0, 0.95, 0.80),     // Sun – warm white/yellow
-            v3_set(0.60, 0.58, 0.55),    // Mercury – gray rocky
-            v3_set(0.90, 0.80, 0.55),    // Venus – pale yellow/cream
-            v3_set(0.20, 0.40, 0.90),    // Earth – deep ocean blue
-            v3_set(0.75, 0.30, 0.15),    // Mars – rusty red
-            v3_set(0.85, 0.70, 0.50),    // Jupiter – beige/orange bands
-            v3_set(0.90, 0.82, 0.65),    // Saturn – pale golden
-            v3_set(0.60, 0.85, 0.90),    // Uranus – light cyan
-            v3_set(0.25, 0.45, 0.90),    // Neptune – deep blue
-            v3_set(0.70, 0.65, 0.60),    // Pluto – light brown/gray
+            v3_set(1.0, 0.95, 0.80),        // Sun – warm white/yellow
+            v3_set(0.60, 0.58, 0.55),       // Mercury – gray rocky
+            v3_set(0.90, 0.80, 0.55),       // Venus – pale yellow/cream
+            v3_set(0.20, 0.40, 0.90),       // Earth – deep ocean blue
+            v3_set(0.75, 0.30, 0.15),       // Mars – rusty red
+                v3_set(0.75, 0.75, 0.75),       // Moon – light gray
+            v3_set(0.85, 0.70, 0.50),       // Jupiter – beige/orange bands
+            v3_set(0.90, 0.82, 0.65),       // Saturn – pale golden
+            v3_set(0.60, 0.85, 0.90),       // Uranus – light cyan
+            v3_set(0.25, 0.45, 0.90),       // Neptune – deep blue
+            v3_set(0.70, 0.65, 0.60),       // Pluto – light brown/gray
             v3_set(1.0, 1.0, 1.0)        // test – white
         };
+
+        
         floatingOrigin_d(&cam, bodies, bodyCount, 1e5 /* 100k km threshold */);
 
         DATA sim_dt = dt * time_warp;
